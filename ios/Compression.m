@@ -68,27 +68,15 @@
 - (ImageResult*) compressImage:(UIImage*)image
                    withOptions:(NSDictionary*)options {
     ImageResult *result = [self compressImageDimensions:image withOptions:options];
-
+    result.mime = @"image/jpeg";
     NSNumber *compressQuality = [options valueForKey:@"compressQuality"];
-    NSNumber *minCompressSize = [options valueForKey:@"minCompressSize"];
-
     if (compressQuality == nil) {
         compressQuality = [NSNumber numberWithFloat:100];
     }
-    minCompressSize = [NSNumber numberWithFloat:100];
-    if (minCompressSize != nil) {
-        NSData * imageData = UIImageJPEGRepresentation(image,1);
-
-        long fileSize = [imageData length]/ 1024;
-        if(fileSize < [minCompressSize longValue]){
-            compressQuality = [NSNumber numberWithFloat:100];
-        }
-    }
-
     compressQuality = [NSNumber numberWithFloat:  [compressQuality floatValue] / 100];
-    result.data = UIImageJPEGRepresentation(result.image, [compressQuality floatValue]);
-    result.mime = @"image/jpeg";
     
+    result.data = UIImageJPEGRepresentation(result.image, [compressQuality floatValue]);
+
     return result;
 }
 
@@ -118,5 +106,23 @@
         handler(exportSession);
     }];
 }
+
+- (NSData *)compressOriginalImage:(ImageResult *)imageResult toMaxDataSizeKBytes:(CGFloat)size{
+    NSData * data = UIImageJPEGRepresentation(imageResult.image, 1.0);
+    CGFloat dataKBytes = data.length/1000.0;
+    CGFloat maxQuality = 0.9f;
+    CGFloat lastData = dataKBytes;
+    while (dataKBytes > size && maxQuality > 0.01f) {
+        maxQuality = maxQuality - 0.01f;
+        data = UIImageJPEGRepresentation(imageResult.image, maxQuality);
+        dataKBytes = data.length / 1000.0;
+        if (lastData == dataKBytes) {
+            break;
+        }else{
+            lastData = dataKBytes;
+        }
+    }
+    return data;
+}  
 
 @end

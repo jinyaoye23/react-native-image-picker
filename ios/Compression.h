@@ -31,7 +31,7 @@
             outputURL:(NSURL*)outputURL
           withOptions:(NSDictionary*)options
               handler:(void (^)(AVAssetExportSession*))handler;
-
+- (NSData *)compressOriginalImage:(ImageResult *)imageResult toMaxDataSizeKBytes:(CGFloat)size;
 @property NSDictionary *exportPresets;
 
 @end

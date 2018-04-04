@@ -29,6 +29,7 @@
 #import "UIImage-Resize/UIImage+Resize.h"
 #import "Compression.h"
 #import <math.h>
+#import "MuguCameraVC.h"
 
 @interface ImageCropPicker : NSObject<
 UIImagePickerControllerDelegate,
@@ -51,6 +52,8 @@ typedef enum selectionMode {
 @property (nonatomic, strong) RCTPromiseResolveBlock resolve;
 @property (nonatomic, strong) RCTPromiseRejectBlock reject;
 @property SelectionMode currentSelectionMode;
+@property (nonatomic, strong) MuguCameraVC *vc;
+
 
 @end
 
