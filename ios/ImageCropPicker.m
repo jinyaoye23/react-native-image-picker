@@ -6,6 +6,8 @@
 //
 
 #import "ImageCropPicker.h"
+#import "MuguCameraVC.h"
+#import "ShowImageVC.h"
 
 #define ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_KEY @"E_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR"
 #define ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_MSG @"Cannot run camera on simulator"
@@ -55,9 +57,9 @@ RCT_EXPORT_MODULE();
                                 @"compressVideo": @YES,
                                 @"minFiles": @1,
                                 @"maxSize": @9,
-                                @"width": @0,
+                                @"width": @200,
                                 @"waitAnimationEnd": @YES,
-                                @"height": @0,
+                                @"height": @200,
                                 @"useFrontCamera": @NO,
                                 @"compressQuality": @100,
                                 @"compressVideoPreset": @"MediumQuality",
@@ -66,6 +68,10 @@ RCT_EXPORT_MODULE();
                                 @"showsSelectedCount": @YES
                                 };
         self.compression = [[Compression alloc] init];
+        
+        self.vc = [[MuguCameraVC alloc]init];
+        
+        [[NSNotificationCenter defaultCenter] addObserver:self selector:@selector(InfoNotificationAction:) name:@"image" object:nil];
     }
     
     return self;
@@ -140,17 +146,10 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
             self.reject(ERROR_PICKER_NO_CAMERA_PERMISSION_KEY, ERROR_PICKER_NO_CAMERA_PERMISSION_MSG, nil);
             return;
         }
-        
-        UIImagePickerController *picker = [[UIImagePickerController alloc] init];
-        picker.delegate = self;
-        picker.allowsEditing = NO;
-        picker.sourceType = UIImagePickerControllerSourceTypeCamera;
-        if ([[self.options objectForKey:@"useFrontCamera"] boolValue]) {
-            picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
-        }
-        
+
         dispatch_async(dispatch_get_main_queue(), ^{
-            [[self getRootVC] presentViewController:picker animated:YES completion:nil];
+            
+            [[self getRootVC] presentViewController:self.vc animated:YES completion:nil];
         });
     }];
 #endif
@@ -158,6 +157,15 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
 
 - (void)viewDidLoad {
     [self viewDidLoad];
+    
+}
+
+- (void)InfoNotificationAction:(NSNotification *)notification{
+
+    UIImage *chosenImageT = [notification.object fixOrientation];
+    
+    [self processSingleImagePick:chosenImageT withExif:nil withViewController:[self getRootVC] withSourceURL:self.croppingFile[@"sourceURL"] withLocalIdentifier:self.croppingFile[@"localIdentifier"] withFilename:self.croppingFile[@"filename"]];
+    
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
@@ -179,7 +187,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
 }
 
 - (NSString*) getTmpDirectory {
-    NSString *TMP_DIRECTORY = @"react-native-customized-image-picker/";
+    NSString *TMP_DIRECTORY = @"react-native-image-crop-picker/";
     NSString *tmpFullPath = [NSTemporaryDirectory() stringByAppendingString:TMP_DIRECTORY];
     
     BOOL isDir;
@@ -283,6 +291,8 @@ RCT_EXPORT_METHOD(openPicker:(NSDictionary *)options
                 }
                 
             }
+            
+            NSLog(@"%@", [self.options objectForKey:@"minCompressSize"]);
             
             [[self getRootVC] presentViewController:imagePickerController animated:YES completion:nil];
             
@@ -607,7 +617,11 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         
         [self startCropping:image];
     } else {
+        
         ImageResult *imageResult = [self.compression compressImage:image withOptions:self.options];
+        NSLog(@"imageResult.data.length: %f",(unsigned long)imageResult.data.length/1000.0);
+        NSLog(@"length:%@",[NSNumber numberWithUnsignedInteger:imageResult.data.length]);
+        
         NSString *filePath = [self persistFile:imageResult.data];
         if (filePath == nil) {
             [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
@@ -618,18 +632,38 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         
         // Wait for viewController to dismiss before resolving, or we lose the ability to display
         // Alert.alert in the .then() handler.
-        [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
-            self.resolve([self createAttachmentResponse:filePath
-                                               withExif:exif
-                                          withSourceURL:sourceURL
-                                    withLocalIdentifier:localIdentifier
-                                           withFilename:filename
-                                              withWidth:imageResult.width
-                                             withHeight:imageResult.height
-                                               withMime:imageResult.mime
-                                               withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
-                                               withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
-        }]];
+        if (self.currentSelectionMode == CAMERA) {
+            UIViewController *vc = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
+            [vc dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
+                self.resolve([self createAttachmentResponse:filePath
+                                                   withExif:exif
+                                              withSourceURL:sourceURL
+                                        withLocalIdentifier:localIdentifier
+                                               withFilename:filename
+                                                  withWidth:imageResult.width
+                                                 withHeight:imageResult.height
+                                                   withMime:imageResult.mime
+                                                   withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
+                                                   withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
+            }]];
+        }
+        else {
+            [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
+                self.resolve([self createAttachmentResponse:filePath
+                                                   withExif:exif
+                                              withSourceURL:sourceURL
+                                        withLocalIdentifier:localIdentifier
+                                               withFilename:filename
+                                                  withWidth:imageResult.width
+                                                 withHeight:imageResult.height
+                                                   withMime:imageResult.mime
+                                                   withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
+                                                   withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
+            }]];
+        }
+      
+                            
+
     }
 }
 
@@ -711,7 +745,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
             }
             break;
         case CAMERA:
-            [controller.presentingViewController.presentingViewController dismissViewControllerAnimated:YES completion:completion];
+            [[[[[UIApplication sharedApplication] delegate] window] rootViewController] dismissViewControllerAnimated:YES completion:completion];
             break;
     }
 }
@@ -726,6 +760,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     CGSize resizedImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue], [[[self options] objectForKey:@"height"] intValue]);
     UIImage *resizedImage = [croppedImage resizedImageToFitInSize:resizedImageSize scaleIfSmaller:YES];
     ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
+    NSLog(@"cropImageResult:%f", imageResult.data.length / 1000.0);
     
     NSString *filePath = [self persistFile:imageResult.data];
     if (filePath == nil) {
