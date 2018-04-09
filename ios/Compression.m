@@ -54,6 +54,7 @@
     int newHeight = oldHeight * scaleFactor;
     CGSize newSize = CGSizeMake(newWidth, newHeight);
     
+    // 等比缩放
     UIGraphicsBeginImageContext(newSize);
     [image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
     UIImage *resizedImage = UIGraphicsGetImageFromCurrentImageContext();
@@ -62,6 +63,7 @@
     result.width = [NSNumber numberWithFloat:newWidth];
     result.height = [NSNumber numberWithFloat:newHeight];
     result.image = resizedImage;
+    
     return result;
 }
 
@@ -76,7 +78,7 @@
     compressQuality = [NSNumber numberWithFloat:  [compressQuality floatValue] / 100];
     
     result.data = UIImageJPEGRepresentation(result.image, [compressQuality floatValue]);
-
+    
     return result;
 }
 
@@ -106,23 +108,5 @@
         handler(exportSession);
     }];
 }
-
-- (NSData *)compressOriginalImage:(ImageResult *)imageResult toMaxDataSizeKBytes:(CGFloat)size{
-    NSData * data = UIImageJPEGRepresentation(imageResult.image, 1.0);
-    CGFloat dataKBytes = data.length/1000.0;
-    CGFloat maxQuality = 0.9f;
-    CGFloat lastData = dataKBytes;
-    while (dataKBytes > size && maxQuality > 0.01f) {
-        maxQuality = maxQuality - 0.01f;
-        data = UIImageJPEGRepresentation(imageResult.image, maxQuality);
-        dataKBytes = data.length / 1000.0;
-        if (lastData == dataKBytes) {
-            break;
-        }else{
-            lastData = dataKBytes;
-        }
-    }
-    return data;
-}  
 
 @end
