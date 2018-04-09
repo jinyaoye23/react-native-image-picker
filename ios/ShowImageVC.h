@@ -12,4 +12,6 @@
 
 @property(nonatomic, strong) UIImage *dataImage;
 
+@property(nonatomic, strong) NSString *location;
+
 @end

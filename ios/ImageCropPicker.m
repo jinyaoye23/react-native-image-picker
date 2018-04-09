@@ -7,7 +7,6 @@
 
 #import "ImageCropPicker.h"
 #import "MuguCameraVC.h"
-#import "ShowImageVC.h"
 
 #define ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_KEY @"E_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR"
 #define ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_MSG @"Cannot run camera on simulator"
@@ -136,7 +135,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
     
     [self setConfiguration:options resolver:resolve rejecter:reject];
     self.currentSelectionMode = CAMERA;
-    
+    self.vc.location = [options objectForKey:@"address"];
 #if TARGET_IPHONE_SIMULATOR
     self.reject(ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_KEY, ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_MSG, nil);
     return;
@@ -619,8 +618,6 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     } else {
         
         ImageResult *imageResult = [self.compression compressImage:image withOptions:self.options];
-        NSLog(@"imageResult.data.length: %f",(unsigned long)imageResult.data.length/1000.0);
-        NSLog(@"length:%@",[NSNumber numberWithUnsignedInteger:imageResult.data.length]);
         
         NSString *filePath = [self persistFile:imageResult.data];
         if (filePath == nil) {
@@ -760,7 +757,6 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     CGSize resizedImageSize = CGSizeMake([[[self options] objectForKey:@"width"] intValue], [[[self options] objectForKey:@"height"] intValue]);
     UIImage *resizedImage = [croppedImage resizedImageToFitInSize:resizedImageSize scaleIfSmaller:YES];
     ImageResult *imageResult = [self.compression compressImage:resizedImage withOptions:self.options];
-    NSLog(@"cropImageResult:%f", imageResult.data.length / 1000.0);
     
     NSString *filePath = [self persistFile:imageResult.data];
     if (filePath == nil) {

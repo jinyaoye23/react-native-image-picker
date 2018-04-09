@@ -115,9 +115,9 @@
     if ([self.device lockForConfiguration:nil]) {
         
         //闪光灯自动
-        if ([self.device isFlashModeSupported:AVCaptureFlashModeAuto]) {
-            [self.device setFlashMode:AVCaptureFlashModeAuto];
-        }
+//        if ([self.device isFlashModeSupported:AVCaptureFlashModeAuto]) {
+//            [self.device setFlashMode:AVCaptureFlashModeAuto];
+//        }
         
         //自动白平衡
         if ([self.device isWhiteBalanceModeSupported:AVCaptureWhiteBalanceModeAutoWhiteBalance]) {
@@ -134,12 +134,6 @@
 
 - (void)initSubViews
 {
-    UIButton *btn = [UIButton new];
-    btn.frame = CGRectMake(20, 20, 40, 40);
-    [btn setTitle:@"取消" forState:UIControlStateNormal];
-    [btn addTarget:self action:@selector(disMiss) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:btn];
-    
     
     self.photoButton = [UIButton new];
     self.photoButton.frame = CGRectMake(KScreenWidth/2.0-30, KScreenHeight-100, 60, 60);
@@ -154,21 +148,25 @@
     self.focusView.hidden = YES;
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [leftButton setTitle:@"切换" forState:UIControlStateNormal];
+    [leftButton setTitle:@"取消" forState:UIControlStateNormal];
     leftButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [leftButton sizeToFit];
-    leftButton.center = CGPointMake((KScreenWidth - 60)/2.0/2.0, KScreenHeight-70);
-    [leftButton addTarget:self action:@selector(changeCamera) forControlEvents:UIControlEventTouchUpInside];
+    leftButton.center = CGPointMake((KScreenWidth - 160)/2.0/2.0, KScreenHeight-70);
+    [leftButton addTarget:self action:@selector(disMiss) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:leftButton];
     
-    
+//    UIButton *btn = [UIButton new];
+//    btn.frame = CGRectMake(20, 20, 40, 40);
+//    [btn setTitle:@"取消" forState:UIControlStateNormal];
+//    [btn addTarget:self action:@selector(disMiss) forControlEvents:UIControlEventTouchUpInside];
+//    [self.view addSubview:btn];
     
     self.flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    [ self.flashButton setTitle:@"闪光灯关" forState:UIControlStateNormal];
+    [ self.flashButton setTitle:@"切换" forState:UIControlStateNormal];
     self.flashButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [self.flashButton sizeToFit];
-    self.flashButton.center = CGPointMake(KScreenWidth - (KScreenWidth - 60)/2.0/2.0, KScreenHeight-70);
-    [ self.flashButton addTarget:self action:@selector(FlashOn) forControlEvents:UIControlEventTouchUpInside];
+    self.flashButton.center = CGPointMake(KScreenWidth - (KScreenWidth - 160)/2.0/2.0, KScreenHeight-70);
+    [ self.flashButton addTarget:self action:@selector(changeCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview: self.flashButton];
     
     UITapGestureRecognizer *tapGesture = [[UITapGestureRecognizer alloc]initWithTarget:self action:@selector(focusGesture:)];
@@ -317,7 +315,7 @@
         
         ShowImageVC *showVC = [[ShowImageVC alloc]init];
         showVC.dataImage = image;
-        
+        showVC.location = self.location;
         [[self getRootVC] presentViewController:showVC animated:YES completion:nil];
         
     }];

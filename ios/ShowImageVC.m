@@ -22,8 +22,8 @@
     [super viewDidLoad];
     
     self.view.backgroundColor = [UIColor blackColor];
-    NSLog(@"self.dataImage:%@", self.dataImage);
-    UIImage *newImage = [self imageAddText:self.dataImage text:@"蘑菇物联"];
+    
+    UIImage *newImage = [self imageAddText:self.dataImage text:self.location];
     
     UIImageView *imageView = [[UIImageView alloc]initWithImage:newImage];
     
@@ -57,8 +57,6 @@
 
 -(void) makeSureImage {
     
-    [self dismissViewControllerAnimated:YES completion:nil];
-    
     NSNotification *notification = [NSNotification notificationWithName:@"image" object:self.dataImage];
     
     [[NSNotificationCenter defaultCenter] postNotification:notification];
@@ -67,20 +65,38 @@
 
 // 给图片添加文字水印：
 - (UIImage *)imageAddText:(UIImage *)img text:(NSString *)logoText{
+    
     NSString* mark = logoText;
+    
     int w = img.size.width;
     int h = img.size.height;
+    
     UIGraphicsBeginImageContext(img.size);
     [img drawInRect:CGRectMake(0, 0, w, h)];
-    NSDictionary *attr = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:40], NSForegroundColorAttributeName : [UIColor whiteColor]  };
+    NSDictionary *attr = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:28], NSForegroundColorAttributeName : [UIColor whiteColor]  };
+
     //获取当前时间
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
     [formatter setDateFormat:@"YYYY-MM-dd"];
     NSDate *dateNow = [NSDate date];
     NSString *currentTimeString = [formatter stringFromDate:dateNow];
+    
+
     //位置显示
-    [currentTimeString drawInRect:CGRectMake(10, h - 60 - 20, w*0.8, h*0.3) withAttributes:attr];
-    [mark drawInRect:CGRectMake(10, h - 60, w*0.8, h*0.3) withAttributes:attr];
+    if (mark && mark.length <= 20) {
+        
+        [currentTimeString drawInRect:CGRectMake(10, h - 40 - 30, w*0.8, h*0.3) withAttributes:attr];
+        [mark drawInRect:CGRectMake(10, h - 40, w*0.8, h*0.5) withAttributes:attr];
+    }
+    else if (mark && mark.length > 20 ) {
+        
+        [currentTimeString drawInRect:CGRectMake(10, h - 80 - 40, w*0.8, h*0.3) withAttributes:attr];
+        [mark drawInRect:CGRectMake(10, h - 80, w*0.8, h*0.5) withAttributes:attr];
+    }
+    else{
+        
+        [currentTimeString drawInRect:CGRectMake(10, h - 50, w*0.8, h*0.3) withAttributes:attr];
+    }
     
     UIImage *aimg = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();

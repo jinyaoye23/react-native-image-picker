@@ -10,4 +10,6 @@
 
 @interface MuguCameraVC : UIViewController
 
+@property(nonatomic, strong) NSString *location;
+
 @end
