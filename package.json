@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/fenglu09/react-native-image-picker"
+    "url": "git+https://github.com/fenglu09/react-native-image-picker.git"
   },
   "keywords": [
     "react",
