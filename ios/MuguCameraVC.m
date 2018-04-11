@@ -8,8 +8,15 @@
 
 #import "MuguCameraVC.h"
 
+#define iPhone6pScreenWidth 414.0
+#define iPhone6pScreenHeight 736.0
 #define KScreenWidth  [UIScreen mainScreen].bounds.size.width
 #define KScreenHeight  [UIScreen mainScreen].bounds.size.height
+//功能页面按钮的自动布局
+#define AutoLayoutFunctionBtnSizeX(X) KScreenWidth*(X)/iPhone6pScreenWidth
+#define AutoLayoutFunctionBtnSizeY(Y) KScreenHeight*(Y)/iPhone6pScreenHeight
+#define AutoLayoutFunctionBtnWidth(width) KScreenWidth*(width)/iPhone6pScreenWidth
+#define AutoLayoutFunctionBtnHeight(height) KScreenHeight*(height)/iPhone6pScreenHeight
 
 //导入相机框架
 #import <AVFoundation/AVFoundation.h>
@@ -47,14 +54,14 @@
 //是否开启闪光灯
 @property (nonatomic)BOOL isflashOn;
 
+@property (nonatomic)int flag;
 @end
 
 @implementation MuguCameraVC
 
 - (void)viewDidLoad {
     [super viewDidLoad];
-    
-    self.view.backgroundColor = [UIColor clearColor];
+    self.view.backgroundColor = [UIColor blackColor];
     
     if ( [self checkCameraPermission]) {
         
@@ -63,7 +70,17 @@
         
         [self focusAtPoint:CGPointMake(0.5, 0.5)];
         
+        // 隐藏电源状态栏
+        [self setNeedsStatusBarAppearanceUpdate];
+        [self prefersStatusBarHidden];
+        
+        self.flag = 0;
     }
+}
+//隐藏单个页面电池条的方法
+
+- (BOOL)prefersStatusBarHidden{
+    return YES;  //隐藏
 }
 
 - (UIViewController*) getRootVC {
@@ -87,11 +104,14 @@
     self.ImageOutPut = [[AVCaptureStillImageOutput alloc]init];
     //生成会话，用来结合输入输出
     self.session = [[AVCaptureSession alloc]init];
-    if ([self.session canSetSessionPreset:AVCaptureSessionPreset1280x720]) {
-        
+    // 2 设置session显示分辨率
+    if ([[UIDevice currentDevice] userInterfaceIdiom] == UIUserInterfaceIdiomPhone){
         [self.session setSessionPreset:AVCaptureSessionPreset1280x720];
-        
     }
+    else {
+        [self.session setSessionPreset:AVCaptureSessionPresetPhoto];
+    }
+
     
     if ([self.session canAddInput:self.input]) {
         [self.session addInput:self.input];
@@ -104,8 +124,10 @@
     
     //使用self.session，初始化预览层，self.session负责驱动input进行信息的采集，layer负责把图像渲染显示
     self.previewLayer = [[AVCaptureVideoPreviewLayer alloc]initWithSession:self.session];
-    self.previewLayer.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
+//    self.previewLayer.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
+    self.previewLayer.frame = CGRectMake(0, KScreenHeight * 0.05, KScreenWidth, KScreenHeight * 0.85);
     self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
+    
     [self.view.layer addSublayer:self.previewLayer];
     
     //开始启动
@@ -113,11 +135,6 @@
     
     //修改设备的属性，先加锁
     if ([self.device lockForConfiguration:nil]) {
-        
-        //闪光灯自动
-//        if ([self.device isFlashModeSupported:AVCaptureFlashModeAuto]) {
-//            [self.device setFlashMode:AVCaptureFlashModeAuto];
-//        }
         
         //自动白平衡
         if ([self.device isWhiteBalanceModeSupported:AVCaptureWhiteBalanceModeAutoWhiteBalance]) {
@@ -127,7 +144,6 @@
         //解锁
         [self.device unlockForConfiguration];
         
-        
     }
     
 }
@@ -136,7 +152,8 @@
 {
     
     self.photoButton = [UIButton new];
-    self.photoButton.frame = CGRectMake(KScreenWidth/2.0-30, KScreenHeight-100, 60, 60);
+    
+    self.photoButton.frame = CGRectMake(AutoLayoutFunctionBtnSizeX(177), AutoLayoutFunctionBtnSizeY(671), AutoLayoutFunctionBtnWidth(60), AutoLayoutFunctionBtnHeight(60));
     [self.photoButton setImage:[UIImage imageNamed:@"photograph"] forState:UIControlStateNormal];
     [self.photoButton addTarget:self action:@selector(shutterCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:self.photoButton];
@@ -147,25 +164,27 @@
     [self.view addSubview:self.focusView];
     self.focusView.hidden = YES;
     
+    self.flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
+    self.flashButton.frame = CGRectMake(15, 5, 20, 20);
+    [self.flashButton setImage:[UIImage imageNamed:@"flashClose"] forState:UIControlStateNormal];
+    
+    [self.flashButton addTarget:self action:@selector(changeFlash:) forControlEvents:UIControlEventTouchUpInside];
+    [self.view addSubview:self.flashButton];
+    
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [leftButton setTitle:@"取消" forState:UIControlStateNormal];
     leftButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [leftButton sizeToFit];
-    leftButton.center = CGPointMake((KScreenWidth - 160)/2.0/2.0, KScreenHeight-70);
+    leftButton.center = CGPointMake((KScreenWidth - 220)/2.0/2.0, KScreenHeight-30);
     [leftButton addTarget:self action:@selector(disMiss) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:leftButton];
     
-//    UIButton *btn = [UIButton new];
-//    btn.frame = CGRectMake(20, 20, 40, 40);
-//    [btn setTitle:@"取消" forState:UIControlStateNormal];
-//    [btn addTarget:self action:@selector(disMiss) forControlEvents:UIControlEventTouchUpInside];
-//    [self.view addSubview:btn];
     
     self.flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [ self.flashButton setTitle:@"切换" forState:UIControlStateNormal];
     self.flashButton.titleLabel.textAlignment = NSTextAlignmentCenter;
     [self.flashButton sizeToFit];
-    self.flashButton.center = CGPointMake(KScreenWidth - (KScreenWidth - 160)/2.0/2.0, KScreenHeight-70);
+    self.flashButton.center = CGPointMake(KScreenWidth - (KScreenWidth - 220)/2.0/2.0, KScreenHeight-30);
     [ self.flashButton addTarget:self action:@selector(changeCamera) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview: self.flashButton];
     
@@ -179,9 +198,9 @@
     [self focusAtPoint:point];
 }
 - (void)focusAtPoint:(CGPoint)point{
-    CGSize size = self.view.bounds.size;
+//    CGSize size = self.view.bounds.size;
     // focusPoint 函数后面Point取值范围是取景框左上角（0，0）到取景框右下角（1，1）之间,按这个来但位置就是不对，只能按上面的写法才可以。前面是点击位置的y/PreviewLayer的高度，后面是1-点击位置的x/PreviewLayer的宽度
-    CGPoint focusPoint = CGPointMake( point.y /size.height ,1 - point.x/size.width );
+    CGPoint focusPoint = CGPointMake(0, 1);
     
     if ([self.device lockForConfiguration:nil]) {
         
@@ -190,19 +209,20 @@
             [self.device setFocusMode:AVCaptureFocusModeAutoFocus];
         }
         
-        if ([self.device isExposureModeSupported:AVCaptureExposureModeAutoExpose ]) {
-            [self.device setExposurePointOfInterest:focusPoint];
-            //曝光量调节
-            [self.device setExposureMode:AVCaptureExposureModeAutoExpose];
-        }
+//        if ([self.device isExposureModeSupported:AVCaptureExposureModeAutoExpose ]) {
+//            [self.device setExposurePointOfInterest:focusPoint];
+//            //曝光量调节
+//            [self.device setExposureMode:AVCaptureExposureModeAutoExpose];
+//        }
+
         
         [self.device unlockForConfiguration];
         _focusView.center = point;
         _focusView.hidden = NO;
-        [UIView animateWithDuration:0.3 animations:^{
+        [UIView animateWithDuration:0.2 animations:^{
             _focusView.transform = CGAffineTransformMakeScale(1.25, 1.25);
         }completion:^(BOOL finished) {
-            [UIView animateWithDuration:0.5 animations:^{
+            [UIView animateWithDuration:0.2 animations:^{
                 _focusView.transform = CGAffineTransformIdentity;
             } completion:^(BOOL finished) {
                 _focusView.hidden = YES;
@@ -236,6 +256,7 @@
 - (void)changeCamera{
     //获取摄像头的数量
     NSUInteger cameraCount = [[AVCaptureDevice devicesWithMediaType:AVMediaTypeVideo] count];
+    
     //摄像头小于等于1的时候直接返回
     if (cameraCount <= 1) return;
     
@@ -311,7 +332,10 @@
         
         NSData *imageData =  [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
         
+
         UIImage *image = [UIImage imageWithData:imageData];
+        image = [self image:image scaleToSize:CGSizeMake(KScreenWidth, KScreenHeight)];
+        image = [self imageFromImage:image inRect:CGRectMake(0, KScreenHeight * 0.08, KScreenWidth, KScreenHeight * 0.85)];
         
         ShowImageVC *showVC = [[ShowImageVC alloc]init];
         showVC.dataImage = image;
@@ -322,7 +346,48 @@
     
 }
 
+/**
+ *将图片缩放到指定的CGSize大小
+ * UIImage image 原始的图片
+ * CGSize size 要缩放到的大小
+ */
+- (UIImage*)image:(UIImage *)image scaleToSize:(CGSize)size{
+    
+    // 得到图片上下文，指定绘制范围
+    UIGraphicsBeginImageContext(size);
+    
+    // 将图片按照指定大小绘制
+    [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
+    
+    // 从当前图片上下文中导出图片
+    UIImage* scaledImage = UIGraphicsGetImageFromCurrentImageContext();
+    
+    // 当前图片上下文出栈
+    UIGraphicsEndImageContext();
+    
+    // 返回新的改变大小后的图片
+    return scaledImage;
+}
 
+/**
+ *从图片中按指定的位置大小截取图片的一部分
+ * UIImage image 原始的图片
+ * CGRect rect 要截取的区域
+ */
+- (UIImage *)imageFromImage:(UIImage *)image inRect:(CGRect)rect{
+    
+    //将UIImage转换成CGImageRef
+    CGImageRef sourceImageRef = [image CGImage];
+    
+    //按照给定的矩形区域进行剪裁
+    CGImageRef newImageRef = CGImageCreateWithImageInRect(sourceImageRef, rect);
+    
+    //将CGImageRef转换成UIImage
+    UIImage *newImage = [UIImage imageWithCGImage:newImageRef];
+    
+    //返回剪裁后的图片
+    return newImage;
+}
 
 /**
  * 保存图片到相册
@@ -352,11 +417,91 @@
 
 
 
-- (void)disMiss
-{
+- (void)disMiss {
     [self dismissViewControllerAnimated:YES completion:nil];
 }
 
+- (void)changeFlash:(UIButton *)sender {
+    
+    sender.selected = !sender.selected;
+    
+    if (self.flag == 0) {
+        [sender setImage:[UIImage imageNamed:@"flashAuto"] forState:UIControlStateNormal];
+        UILabel *remind = [[UILabel alloc]initWithFrame:CGRectMake(AutoLayoutFunctionBtnSizeX(155),AutoLayoutFunctionBtnSizeY(350), AutoLayoutFunctionBtnWidth(104), AutoLayoutFunctionBtnHeight(37))];
+        remind.text = @"自动闪光灯";
+        remind.textAlignment = NSTextAlignmentCenter;
+        remind.textColor = [UIColor whiteColor];
+        remind.font = [UIFont systemFontOfSize:15];
+        remind.backgroundColor = [UIColor blackColor];
+        remind.layer.cornerRadius = 5;
+        remind.clipsToBounds = YES;
+        [self.view addSubview:remind];
+        [UIView animateWithDuration:1.5f animations:^{
+            remind.alpha = 0.0f;
+        }];
+        
+        if ([_device lockForConfiguration:nil]) {
+            //闪光灯自动
+            if ([_device isFlashModeSupported:AVCaptureFlashModeAuto]) {
+                [_device setFlashMode:AVCaptureFlashModeAuto];
+            }
+            //自动白平衡
+            if ([_device isWhiteBalanceModeSupported:AVCaptureWhiteBalanceModeAutoWhiteBalance]) {
+                [_device setWhiteBalanceMode:AVCaptureWhiteBalanceModeAutoWhiteBalance];
+            }
+            //解锁
+            [_device unlockForConfiguration];
+        }
+        self.flag++;
+        return;
+    }
+    if (self.flag == 1) {
+        [sender setImage:[UIImage imageNamed:@"flashOpen"] forState:UIControlStateNormal];
+        UILabel *remind = [[UILabel alloc]initWithFrame:CGRectMake(AutoLayoutFunctionBtnSizeX(155),AutoLayoutFunctionBtnSizeY(350), AutoLayoutFunctionBtnWidth(104), AutoLayoutFunctionBtnHeight(37))];
+        remind.text = @"闪光灯开启";
+        remind.textAlignment = NSTextAlignmentCenter;
+        remind.textColor = [UIColor whiteColor];
+        remind.font = [UIFont systemFontOfSize:15];
+        remind.backgroundColor = [UIColor blackColor];
+        remind.layer.cornerRadius = 5;
+        remind.clipsToBounds = YES;
+        [self.view addSubview:remind];
+        [UIView animateWithDuration:1.5f animations:^{
+            remind.alpha = 0.0f;
+        }];
+        if ([_device lockForConfiguration:nil]) {
+            if ([_device isFlashModeSupported:AVCaptureFlashModeOn]) {
+                [_device setFlashMode:AVCaptureFlashModeOn];
+            }
+            [_device unlockForConfiguration];
+        }
+        self.flag++;
+        return;
+    }
+    if (self.flag == 2) {
+        [sender setImage:[UIImage imageNamed:@"flashClose"] forState:UIControlStateNormal];
+        UILabel *remind = [[UILabel alloc]initWithFrame:CGRectMake(AutoLayoutFunctionBtnSizeX(155),AutoLayoutFunctionBtnSizeY(350), AutoLayoutFunctionBtnWidth(104), AutoLayoutFunctionBtnHeight(37))];
+        remind.text = @"闪光灯关闭";
+        remind.textAlignment = NSTextAlignmentCenter;
+        remind.textColor = [UIColor whiteColor];
+        remind.font = [UIFont systemFontOfSize:15];
+        remind.backgroundColor = [UIColor blackColor];
+        remind.layer.cornerRadius = 5;
+        remind.clipsToBounds = YES;
+        [self.view addSubview:remind];
+        [UIView animateWithDuration:1.5f animations:^{
+            remind.alpha = 0.0f;
+        }];
+        if ([_device lockForConfiguration:nil]) {
+            if ([_device isFlashModeSupported:AVCaptureFlashModeOff]) {
+                [_device setFlashMode:AVCaptureFlashModeOff];
+            }
+            [_device unlockForConfiguration];
+        }
+        self.flag = 0;
+        return ;
+    }
+}
 
 
 #pragma mark- 检测相机权限

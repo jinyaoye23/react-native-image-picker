@@ -21,14 +21,18 @@
 - (void)viewDidLoad {
     [super viewDidLoad];
     
+    // 隐藏电源状态栏
+    [self setNeedsStatusBarAppearanceUpdate];
+    [self prefersStatusBarHidden];
+    
     self.view.backgroundColor = [UIColor blackColor];
     
     UIImage *newImage = [self imageAddText:self.dataImage text:self.location];
     
     UIImageView *imageView = [[UIImageView alloc]initWithImage:newImage];
     
-    imageView.frame = CGRectMake(0, KScreenHeight * 0.17, KScreenWidth, KScreenHeight * 0.7);
-    
+//    imageView.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
+    imageView.frame = CGRectMake(0, KScreenHeight * 0.05, KScreenWidth, KScreenHeight * 0.85);
     [self.view addSubview:imageView];
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -47,6 +51,11 @@
     [rightBtn addTarget:self action:@selector(makeSureImage) forControlEvents:UIControlEventTouchUpInside];
     [self.view addSubview:rightBtn];
     self.dataImage = newImage;
+}
+
+//隐藏单个页面电池条的方法
+- (BOOL)prefersStatusBarHidden{
+    return YES;  //隐藏
 }
 
 -(void) popView {
@@ -73,11 +82,11 @@
     
     UIGraphicsBeginImageContext(img.size);
     [img drawInRect:CGRectMake(0, 0, w, h)];
-    NSDictionary *attr = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:28], NSForegroundColorAttributeName : [UIColor whiteColor]  };
+    NSDictionary *attr = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:15], NSForegroundColorAttributeName : [UIColor whiteColor]  };
 
     //获取当前时间
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"YYYY-MM-dd"];
+    [formatter setDateFormat:@"YYYY年MM月dd日 HH:mm"];
     NSDate *dateNow = [NSDate date];
     NSString *currentTimeString = [formatter stringFromDate:dateNow];
     
@@ -85,17 +94,17 @@
     //位置显示
     if (mark && mark.length <= 20) {
         
-        [currentTimeString drawInRect:CGRectMake(10, h - 40 - 30, w*0.8, h*0.3) withAttributes:attr];
-        [mark drawInRect:CGRectMake(10, h - 40, w*0.8, h*0.5) withAttributes:attr];
+        [currentTimeString drawInRect:CGRectMake(10, h - 45, w*0.8, h*0.3) withAttributes:attr];
+        [mark drawInRect:CGRectMake(10, h - 25, w*0.8, h*0.5) withAttributes:attr];
     }
     else if (mark && mark.length > 20 ) {
         
-        [currentTimeString drawInRect:CGRectMake(10, h - 80 - 40, w*0.8, h*0.3) withAttributes:attr];
-        [mark drawInRect:CGRectMake(10, h - 80, w*0.8, h*0.5) withAttributes:attr];
+        [currentTimeString drawInRect:CGRectMake(10, h - 60, w*0.8, h*0.3) withAttributes:attr];
+        [mark drawInRect:CGRectMake(10, h - 40, w*0.8, h*0.5) withAttributes:attr];
     }
     else{
         
-        [currentTimeString drawInRect:CGRectMake(10, h - 50, w*0.8, h*0.3) withAttributes:attr];
+        [currentTimeString drawInRect:CGRectMake(10, h - 25, w*0.8, h*0.3) withAttributes:attr];
     }
     
     UIImage *aimg = UIGraphicsGetImageFromCurrentImageContext();
