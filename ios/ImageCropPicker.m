@@ -431,8 +431,8 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
      }];
 }
 
-- (NSArray*) createAttachmentResponse:(NSString*)filePath withExif:(NSDictionary*) exif withSourceURL:(NSString*)sourceURL withLocalIdentifier:(NSString*)localIdentifier withFilename:(NSString*)filename withWidth:(NSNumber*)width withHeight:(NSNumber*)height withMime:(NSString*)mime withSize:(NSNumber*)size withData:(NSString*)data {
-    return @[@{
+- (NSDictionary*) createAttachmentResponse:(NSString*)filePath withExif:(NSDictionary*) exif withSourceURL:(NSString*)sourceURL withLocalIdentifier:(NSString*)localIdentifier withFilename:(NSString*)filename withWidth:(NSNumber*)width withHeight:(NSNumber*)height withMime:(NSString*)mime withSize:(NSNumber*)size withData:(NSString*)data {
+    return @{
              @"path": filePath,
              @"sourceURL": (sourceURL) ? sourceURL : [NSNull null],
              @"localIdentifier": (localIdentifier) ? localIdentifier : [NSNull null],
@@ -443,13 +443,14 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
              @"size": size,
              @"data": (data) ? data : [NSNull null],
              @"exif": (exif) ? exif : [NSNull null],
-             }];
+             };
 }
 
 - (void)qb_imagePickerController:
 (QBImagePickerController *)imagePickerController
           didFinishPickingAssets:(NSArray *)assets {
     
+    NSLog(@"选择图片完成");
     PHImageManager *manager = [PHImageManager defaultManager];
     PHImageRequestOptions* options = [[PHImageRequestOptions alloc] init];
     options.synchronous = NO;
@@ -465,6 +466,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
             for (PHAsset *phAsset in assets) {
                 
                 if (phAsset.mediaType == PHAssetMediaTypeVideo) {
+                    NSLog(@"1111111");
                     [self getVideoAsset:phAsset completion:^(NSDictionary* video) {
                         dispatch_async(dispatch_get_main_queue(), ^{
                             [lock lock];
@@ -493,6 +495,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
                         });
                     }];
                 } else {
+                    NSLog(@"222222");
                     [manager
                      requestImageDataForAsset:phAsset
                      options:options
