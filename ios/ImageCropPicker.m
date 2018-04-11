@@ -136,6 +136,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
     [self setConfiguration:options resolver:resolve rejecter:reject];
     self.currentSelectionMode = CAMERA;
     self.vc.location = [options objectForKey:@"address"];
+    
 #if TARGET_IPHONE_SIMULATOR
     self.reject(ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_KEY, ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_MSG, nil);
     return;
@@ -145,10 +146,22 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
             self.reject(ERROR_PICKER_NO_CAMERA_PERMISSION_KEY, ERROR_PICKER_NO_CAMERA_PERMISSION_MSG, nil);
             return;
         }
+        
+        UIImagePickerController *picker = [[UIImagePickerController alloc] init];
+        picker.delegate = self;
+        picker.allowsEditing = NO;
+        picker.sourceType = UIImagePickerControllerSourceTypeCamera;
+        if ([[self.options objectForKey:@"useFrontCamera"] boolValue]) {
+            picker.cameraDevice = UIImagePickerControllerCameraDeviceFront;
+        }
 
         dispatch_async(dispatch_get_main_queue(), ^{
-            
-            [[self getRootVC] presentViewController:self.vc animated:YES completion:nil];
+            if ([[[self options] objectForKey:@"isWaterMark"] boolValue]) {
+                [[self getRootVC] presentViewController:self.vc animated:YES completion:nil];
+            }
+            else{
+                [[self getRootVC] presentViewController:picker animated:YES completion:nil];
+            }
         });
     }];
 #endif
@@ -604,6 +617,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         }]];
         return;
     }
+    
     
     NSLog(@"id: %@ filename: %@", localIdentifier, filename);
     
