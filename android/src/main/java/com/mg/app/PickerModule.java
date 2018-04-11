@@ -15,6 +15,7 @@ import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.facebook.react.bridge.ActivityEventListener;
@@ -31,6 +32,7 @@ import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
+import com.nostra13.universalimageloader.utils.L;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 import com.yalantis.ucrop.model.AspectRatio;
@@ -65,11 +67,11 @@ import cn.finalteam.rxgalleryfinal.utils.Logger;
 import cn.finalteam.rxgalleryfinal.utils.SimpleDateUtils;
 import cn.finalteam.rxgalleryfinal.utils.ThemeUtils;
 
-class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack, ActivityEventListener {
+class PickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private static final String E_ACTIVITY_DOES_NOT_EXIST = "E_ACTIVITY_DOES_NOT_EXIST";
 
     private Promise mPickerPromise;
-    private boolean watermark = false;
+    private boolean isWaterMark = false;
     private String address = "";
 
 
@@ -88,7 +90,7 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     private int width = 200;
     private int height = 200;
     private int maxSize = 9;
-    private int imgmaxSize = 200;
+    private int maxImageSize ;
 
     private int compressQuality = -1;
     private boolean returnAfterShot = false;
@@ -100,7 +102,8 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     PickerModule(ReactApplicationContext reactContext) {
         super(reactContext);
         mReactContext = reactContext;
-        reactContext.addActivityEventListener(this);
+        mReactContext.addActivityEventListener(this);
+
 
     }
 
@@ -110,7 +113,8 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     }
 
     private void setConfiguration(final ReadableMap options) {
-        watermark = options.hasKey("watermark") && options.getBoolean("watermark");
+        maxImageSize = options.hasKey("maxImageSize") ? options.getInt("maxImageSize") : -1;
+        isWaterMark = options.hasKey("isWaterMark") && options.getBoolean("isWaterMark");
         address = options.hasKey("address") ? options.getString("address") : "";
 
 
@@ -120,7 +124,6 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
         width = options.hasKey("width") ? options.getInt("width") : width;
         height = options.hasKey("height") ? options.getInt("height") : height;
         maxSize = options.hasKey("maxSize") ? options.getInt("maxSize") : maxSize;
-        imgmaxSize = options.hasKey("imgmaxSize") ? options.getInt("imgmaxSize") : imgmaxSize;
         cropping = options.hasKey("cropping") ? options.getBoolean("cropping") : cropping;
         includeBase64 = options.hasKey("includeBase64") && options.getBoolean("includeBase64");
         compressQuality = options.hasKey("compressQuality") ? options.getInt("compressQuality") : compressQuality;
@@ -151,7 +154,35 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
             return getVideo(activity, path, mime);
         }
 
+        if(maxImageSize!=-1){
+            //add-----质量处理
+            FileInputStream fis = new FileInputStream(path);
+            Bitmap bitmap = BitmapFactory.decodeStream(fis);
+            if (bitmap.getByteCount()/ 1024<maxImageSize){
+                return getImage(activity, path);
+            }
+            ByteArrayInputStream isBm = compressImage(bitmap);
+
+            Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
+                    + ".jpg");
+
+            File f = new File(img_savepath);
+            if (!f.exists()) {
+                f.mkdirs();
+            }
+
+            String newpath = myimageUri.toString();
+            if (newpath.startsWith("file://")) {
+                newpath = newpath.substring(7, newpath.length());
+            }
+
+            setnewpath(isBm, newpath);
+            //add-----质量处理end
+            return getImage(activity, newpath);
+        }
+
         return getImage(activity, path);
+
     }
 
     private WritableMap getAsyncSelection(final Activity activity, ImageCropBean result) throws Exception {
@@ -163,14 +194,6 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     private WritableMap getAsyncSelection(final Activity activity, MediaBean result) throws Exception {
 
         String path = result.getOriginalPath();
-        FileInputStream fis = new FileInputStream(path);
-        Bitmap bitmap = BitmapFactory.decodeStream(fis);
-
-
-        //质量处理
-        ByteArrayInputStream isBm = compressImage(bitmap);
-        //取代原照片
-        setnewpath(isBm, path);
         return getAsyncSelection(activity, path);
 
 
@@ -245,17 +268,16 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
 
     ImageCropBean result;
 
-    public void openCamera() {
-//        rxGalleryFinal
-//                .radio()
-//                .subscribe(new RxBusResultDisposable<ImageRadioResultEvent>() {
-//                    @Override
-//                    protected void onEvent(ImageRadioResultEvent imageRadioResultEvent) throws Exception {
-//                        //拍照水印处理
-//                        result = imageRadioResultEvent.getResult();
-//                    }
-//                })
-//                .openGallery();
+    public void openCamera(boolean watermark) {
+//        if(watermark){
+//            Intent intent = new Intent(activity, WaterCameraActivity.class);
+////            intent.putExtra(StaticParam.CUR_ADDRESS, curAddress);
+////            intent.putExtra(StaticParam.USER_NAME, stationName);
+////            Button btn_recv = (Button) findViewById(R.id.batchRecv);
+////            intent.putExtra(StaticParam.USER_OPERATION, btn_recv.getText().toString());
+//            activity.startActivityForResult(intent, 1);
+//            return;
+//        }
 
 
         Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
@@ -320,6 +342,21 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
         return bmp;
     }
 
+    private void setnewpath2(Bitmap newbitmap, String path) {
+        File avaterFile = new File(path);//设置文件名称
+        if (avaterFile.exists()) {
+            avaterFile.delete();
+        }
+        try {
+            avaterFile.createNewFile();
+            FileOutputStream fos = new FileOutputStream(avaterFile);
+            newbitmap.compress(Bitmap.CompressFormat.JPEG, 100, fos);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+    }
+
     private void setnewpath(ByteArrayInputStream bis, String path) {
 
         File avaterFile = new File(path);//设置文件名称
@@ -357,6 +394,38 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
 
     }
 
+
+    public void setWaterMark(String path) {
+        try {
+
+            if (path.startsWith("file://")) {
+                path = path.substring(7, path.length());
+            }
+
+            FileInputStream fis = new FileInputStream(path);
+            Bitmap bitmap = BitmapFactory.decodeStream(fis);
+
+            if (bitmap == null) {
+                return ;
+            }
+
+            //水印----日期生成
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy年MM月dd日   HH:mm");
+            Date curDate = new Date(System.currentTimeMillis());
+            String str = formatter.format(curDate);
+            //水印----日期生成 end
+
+            //带水印Bitmap
+            Bitmap newbitmap = createWatermark(bitmap, str);
+
+            //取代原照片
+            setnewpath2(newbitmap, path);
+
+
+        } catch (Exception e) {
+        }
+    }
+
     public void getBitmap(String path) {
 
         try {
@@ -365,10 +434,10 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
                 Log.d("aaa", "--p-" + path);
             }
 
-            if (!watermark) {
-                posturl(path);
-                return;
-            }
+//            if (is) {
+//                posturl(path);
+//                return;
+//            }
 
             FileInputStream fis = new FileInputStream(path);
             Bitmap bitmap = BitmapFactory.decodeStream(fis);
@@ -399,11 +468,11 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
 
 
     public ByteArrayInputStream compressImage(Bitmap image) {
-        Log.d("aaa", imgmaxSize + "----");
+        Log.d("aaa",maxImageSize+"");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        int options = compressQuality;
+        int options = 100;
         image.compress(Bitmap.CompressFormat.JPEG, options, baos);// 质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
-        while (baos.toByteArray().length / 1024 > imgmaxSize) { // 循环判断如果压缩后图片是否大于100kb,大于继续压缩
+        while (baos.toByteArray().length / 1024 > maxImageSize) { // 循环判断如果压缩后图片是否大于100kb,大于继续压缩
             baos.reset(); // 重置baos即清空baos
             image.compress(Bitmap.CompressFormat.JPEG, options, baos);// 这里压缩options%，把压缩后的数据存放到baos中
             options -= 10;// 每次都减少10
@@ -430,11 +499,11 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
         activity.startActivityForResult(intent, crop_REQUEST_CODE);
     }
 
-    @Override
-    public void getURL(String url) {
-        mPickerPromise.resolve(url);
-
-    }
+//    @Override
+//    public void getURL(String url) {
+//        mPickerPromise.resolve(url);
+//
+//    }
 
 
     /**
@@ -569,6 +638,23 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     Activity activity;
 
     @ReactMethod
+    public void openCamera(final ReadableMap options, final Promise promise) {
+
+        activity = getCurrentActivity();
+
+        if (activity == null) {
+            promise.reject(E_ACTIVITY_DOES_NOT_EXIST, "Activity doesn't exist");
+            return;
+        }
+
+        setConfiguration(options);
+//        initImageLoader(activity);
+        mPickerPromise = promise;
+
+        openCamera(isWaterMark);
+    }
+
+    @ReactMethod
     public void openPicker(final ReadableMap options, final Promise promise) {
         activity = getCurrentActivity();
 
@@ -630,11 +716,11 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
         } else {
             rxGalleryFinal.imageLoader(ImageLoaderType.GLIDE);
         }
-        if (openCameraOnStart) {
-            //拍照处理,直接跳去原生拍照
-            openCamera();
-            return;
-        }
+//        if (openCameraOnStart) {
+//            //拍照处理,直接跳去原生拍照
+//            openCamera();
+//            return;
+//        }
         if (!this.multiple) {
             if (cropping) {
                 rxGalleryFinal.crop();
@@ -756,33 +842,87 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
     }
 
     @Override
+    public void onNewIntent(Intent intent) {
+
+    }
+    public void setmaxImageSize(String path) {
+        Log.d("aaa",path);
+        if (path.startsWith("file://")) {
+            path = path.substring(7, path.length());
+        }
+        if(maxImageSize!=-1){
+            try{
+                FileInputStream fis = new FileInputStream(path);
+                Bitmap bitmap = BitmapFactory.decodeStream(fis);
+
+                if (bitmap == null) {
+                    return;
+                }
+                ByteArrayInputStream isBm =compressImage(bitmap);
+                //取代原照片
+                setnewpath(isBm, path);
+            }catch (Exception e){
+
+            }
+        }
+
+        posturl(path);
+    }
+    @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
 
 
         if (requestCode == TAKE_IMAGE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-            if (!cropping) {
-                //水印处理
-                getBitmap(imageUri);
-            } else {
-                //裁剪
-                crop2();
+
+            String path=imageUri;
+            //水印处理
+            if (isWaterMark) {
+                setWaterMark(path);
             }
+
+            //裁剪处理
+            if (cropping) {
+                crop2(path);
+                return;
+            }
+
+            //压缩处理
+            setmaxImageSize(path);
             return;
         }
 
         if (requestCode == crop_REQUEST_CODE) {
-            getBitmap(OUTUri.toString());
+
+            String path=imageUri;
+            if (path.startsWith("file://")) {
+                path = path.substring(7, path.length());
+            }
+
+
+            File avaterFile = new File(path);//设置文件名称
+            if (avaterFile.exists()) {
+                avaterFile.delete();
+            }
+
+            //压缩处理
+            setmaxImageSize(OUTUri.toString());
             return;
         }
     }
 
+
     Uri OUTUri;
 
-    public void crop2() {
-
+    public void crop2(String path) {
+        if(path==null){
+            return;
+        }
+        if (!path.startsWith("file://")) {
+            path = "file://"+path;
+        }
         setTheme();
 //
-        Uri inputUri = Uri.parse(imageUri);
+        Uri inputUri = Uri.parse(path);
         OUTUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
                 + ".jpg");
 
@@ -791,12 +931,13 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
 
 
         bundle.putParcelable(UCrop.EXTRA_OUTPUT_URI, OUTUri);
+        bundle.putParcelable(UCrop.EXTRA_INPUT_URI, inputUri);
+
         bundle.putInt(UCrop.Options.EXTRA_STATUS_BAR_COLOR, uCropStatusColor);
         bundle.putInt(UCrop.Options.EXTRA_TOOL_BAR_COLOR, uCropToolbarColor);
         bundle.putString(UCrop.Options.EXTRA_UCROP_TITLE_TEXT_TOOLBAR, uCropTitle);
         bundle.putInt(UCrop.Options.EXTRA_UCROP_COLOR_WIDGET_ACTIVE, uCropActivityWidgetColor);
         bundle.putInt(UCrop.Options.EXTRA_UCROP_WIDGET_COLOR_TOOLBAR, uCropToolbarWidgetColor);
-        bundle.putParcelable(UCrop.EXTRA_INPUT_URI, inputUri);
         // UCrop 参数 end
 
         int bk = FileUtils.existImageDir(inputUri.getPath());
@@ -811,8 +952,5 @@ class PickerModule extends ReactContextBaseJavaModule implements cameraCallBack,
         }
     }
 
-    @Override
-    public void onNewIntent(Intent intent) {
 
-    }
 }
