@@ -71,7 +71,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private static final String E_ACTIVITY_DOES_NOT_EXIST = "E_ACTIVITY_DOES_NOT_EXIST";
 
     private Promise mPickerPromise;
-    private boolean isWaterMark = true;
+    private boolean isWaterMark = false;
     private String address = "";
 
 
