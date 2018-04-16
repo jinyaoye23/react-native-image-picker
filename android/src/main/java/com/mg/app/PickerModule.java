@@ -336,8 +336,25 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 //        if(h<w){
 //            drawx=w/10;
 //        }
-        canvas.drawText(mark, drawx, (drawy - texts / 15), p);
-        canvas.drawText(address, drawx, drawy, p);
+        int addressnum=address.length();
+        int endnum=0;
+        List<String> txts=new ArrayList<String>();
+        for(int i=0;i<addressnum;i++){
+            endnum=i+16;
+            if(endnum>=addressnum){
+                endnum=addressnum;
+            }
+            String txt= address.substring(i,endnum);
+            txts.add(txt);
+            i=endnum;
+
+        }
+        for(int i=0;i<txts.size();i++){
+            String txt=txts.get(i);
+            canvas.drawText(txt, drawx, (drawy - texts / 15*(txts.size()-i)), p);
+        }
+
+        canvas.drawText(mark, drawx, (drawy - texts / 15*(txts.size()+1)), p);
 
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
