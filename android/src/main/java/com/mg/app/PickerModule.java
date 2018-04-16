@@ -278,7 +278,10 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 //            activity.startActivityForResult(intent, 1);
 //            return;
 //        }
-
+        File f = new File(img_savepath);
+        if (!f.exists()) {
+            f.mkdirs();
+        }
 
         Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
                 + ".jpg");
