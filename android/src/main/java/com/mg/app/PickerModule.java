@@ -1,12 +1,15 @@
 package com.mg.app;
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.Rect;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
@@ -47,6 +50,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
 import java.util.Random;
@@ -73,6 +77,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private Promise mPickerPromise;
     private boolean isWaterMark = false;
     private String address = "";
+    private String name = "";
 
 
     private boolean cropping = false;
@@ -116,6 +121,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         maxImageSize = options.hasKey("maxImageSize") ? options.getInt("maxImageSize") : -1;
         isWaterMark = options.hasKey("isWaterMark") && options.getBoolean("isWaterMark");
         address = options.hasKey("address") ? options.getString("address") : "";
+        name = options.hasKey("name") ? options.getString("name") : "";
 
 
         multiple = options.hasKey("multiple") && options.getBoolean("multiple");
@@ -302,7 +308,51 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     public static final String appDirName = "mogu";
     public static final String cacheDir = SDCARD + "/" + appDirName + "/"
             + "CameraPic";
+    public   int dip2px(Context context, float dpValue) {
+        float scale = context.getResources().getDisplayMetrics().density;
+        return (int) (dpValue * scale + 0.5f);
+    }
 
+
+    public  int gettextWidth(Paint p  ,String str){
+
+        int textWidth = 0;
+        Rect bounds = new Rect();
+        p.getTextBounds(str, 0, str.length(), bounds);
+        textWidth = bounds.right-bounds.left;
+        return  textWidth;
+
+    }
+    public  int gettextHeight(Paint p  ){
+
+        int textHeight = 0;
+        Paint.FontMetricsInt fontMetrics = p.getFontMetricsInt();
+        textHeight = fontMetrics.bottom-fontMetrics.top;
+        return textHeight;
+    }
+
+    public  String getWeek() {
+        Calendar cal = Calendar.getInstance();
+        int i = cal.get(Calendar.DAY_OF_WEEK);
+        switch (i) {
+            case 1:
+                return "星期日";
+            case 2:
+                return "星期一";
+            case 3:
+                return "星期二";
+            case 4:
+                return "星期三";
+            case 5:
+                return "星期四";
+            case 6:
+                return "星期五";
+            case 7:
+                return "星期六";
+            default:
+                return "";
+        }
+    }
 
     private Bitmap createWatermark(Bitmap target, String mark) {
         int w = target.getWidth();
@@ -332,29 +382,119 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
         // 在左边的中间位置开始添加水印
         float drawy = h - texts / 15;
-        float drawx = w / 15;
+        float drawx = w / 30;
 //        if(h<w){
 //            drawx=w/10;
 //        }
-        int addressnum=address.length();
-        int endnum=0;
-        List<String> txts=new ArrayList<String>();
-        for(int i=0;i<addressnum;i++){
-            endnum=i+16;
-            if(endnum>=addressnum){
-                endnum=addressnum;
+
+
+//        canvas.drawText(address, drawx, drawy, p);
+        //水印日期
+        int baseLineY = dip2px(mReactContext,17);
+        int baseLineX = dip2px(mReactContext,17);
+        //字体大小
+        float txtsize = dip2px(mReactContext,45);
+        float paddingnum= dip2px(mReactContext,10);
+        float line1y=baseLineX+txtsize-dip2px(mReactContext,5);
+
+        String time=mark.substring(mark.length()-5,mark.length());//时分
+        Paint p_time = new Paint();
+        p_time.setAntiAlias(true);// 去锯齿
+        p_time.setFakeBoldText(true);//加粗
+        p_time.setColor(Color.WHITE);
+        p_time.setTextSize(txtsize);
+        canvas.drawText(time, baseLineX+paddingnum, line1y, p_time);
+
+        int p_timey= gettextHeight(p_time);
+        Log.d("aaa",p_timey+"----p_timey");
+
+        //日期
+        String data=mark.substring(0,mark.length()-6);
+        String datas[]=data.split("-");
+        String datanew=datas[0]+"."+datas[1]+"."+datas[2];
+
+        float datex=baseLineX+paddingnum+gettextWidth(p_time,time)+dip2px(mReactContext,15);
+
+        float datasize = dip2px(mReactContext,20);
+        Paint p_data = new Paint();
+        p_data.setAntiAlias(true);// 去锯齿
+        p_data.setFakeBoldText(true);
+        p_data.setColor(Color.WHITE);
+        p_data.setTextSize(datasize);
+        canvas.drawText(datanew, datex, line1y, p_data);
+
+        //星期
+        float weekend=datex+gettextWidth(p_data,datanew)+dip2px(mReactContext,10);
+        String weekvalue=getWeek();
+        float weeksize = dip2px(mReactContext,20);
+
+        Paint p_weekend= new Paint();
+        p_weekend.setAntiAlias(true);// 去锯齿
+        p_weekend.setFakeBoldText(true);
+        p_weekend.setColor(Color.WHITE);
+        p_weekend.setTextSize(weeksize);
+        canvas.drawText(weekvalue, weekend, line1y, p_weekend);
+
+        float line2y=line1y+dip2px(mReactContext,30);
+        float txtaddress = dip2px(mReactContext,19);
+        Paint p_address = new Paint();
+        p_address.setAntiAlias(true);// 去锯齿
+        p_address.setFakeBoldText(true);//加粗
+        p_address.setColor(Color.WHITE);
+        p_address.setTextSize(txtaddress);
+        if(!address.equals("")){
+            line2y=line2y+paddingnum;
+
+            //地址图标
+            //在画布上绘制水印图片
+            Resources res = mReactContext.getResources();
+            Bitmap watermark= BitmapFactory.decodeResource(res, R.drawable.location);
+            canvas.drawBitmap(watermark, baseLineX+paddingnum, line2y-dip2px(mReactContext,20), null);
+
+
+
+            //地址
+            int addressnum=address.length();
+            int endnum=0;
+            List<String> txts=new ArrayList<String>();
+
+            for(int i=0;i<addressnum;i++){
+                endnum=i+16;
+                if(endnum>=addressnum){
+                    endnum=addressnum;
+                }
+                String txt= address.substring(i,endnum);
+                txts.add(txt);
+                i=endnum;
+
             }
-            String txt= address.substring(i,endnum);
-            txts.add(txt);
-            i=endnum;
-
+            for(int i=0;i<txts.size();i++){
+                String txt=txts.get(i);
+                if(i!=0){
+                    line2y=line2y+txtaddress+paddingnum;
+                }
+                canvas.drawText(txt, baseLineX+paddingnum+dip2px(mReactContext,30), line2y, p_address);
+            }
         }
-        for(int i=0;i<txts.size();i++){
-            String txt=txts.get(i);
-            canvas.drawText(txt, drawx, (drawy - texts / 15*(txts.size()-i)), p);
+        //name
+        if(!name.equals("")) {
+            line2y=line2y+paddingnum;
+            Resources res = mReactContext.getResources();
+            Bitmap watermark= BitmapFactory.decodeResource(res, R.drawable.person);
+            canvas.drawBitmap(watermark, baseLineX+paddingnum, line2y+dip2px(mReactContext,8), null);
+
+            line2y=line2y+txtaddress+paddingnum;
+            canvas.drawText(name, baseLineX+paddingnum+dip2px(mReactContext,30), line2y, p_address);
         }
 
-        canvas.drawText(mark, drawx, (drawy - texts / 15*(txts.size()+1)), p);
+
+        //水印竖线
+        Paint p_line = new Paint();
+        p_line.setAntiAlias(true);// 去锯齿
+        p_line.setFakeBoldText(true);
+        p_line.setColor(Color.WHITE);
+        p_line.setStrokeWidth(10.0f);
+        canvas.drawLine(baseLineX,baseLineX,baseLineX,line2y+paddingnum,p_line);
 
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
@@ -430,7 +570,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             }
 
             //水印----日期生成
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy年MM月dd日   HH:mm");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm");
             Date curDate = new Date(System.currentTimeMillis());
             String str = formatter.format(curDate);
             //水印----日期生成 end
