@@ -12,4 +12,5 @@
 
 @property(nonatomic, strong) NSString *location;
 
+@property(nonatomic, strong) NSString *name;
 @end

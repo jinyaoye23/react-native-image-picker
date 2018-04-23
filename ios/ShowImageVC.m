@@ -9,8 +9,16 @@
 #import "ShowImageVC.h"
 
 #define getRectNavAndStatusHight  self.navigationController.navigationBar.frame.size.height+[[UIApplication sharedApplication] statusBarFrame].size.height
+
+#define iPhone6sScreenWidth 375.0
+#define iPhone6sScreenHeight 667.0
 #define KScreenWidth  [UIScreen mainScreen].bounds.size.width
 #define KScreenHeight  [UIScreen mainScreen].bounds.size.height
+//功能页面按钮的自动布局
+#define AutoLayoutFunctionBtnSizeX(X) KScreenWidth*(X)/iPhone6sScreenWidth
+#define AutoLayoutFunctionBtnSizeY(Y) KScreenHeight*(Y)/iPhone6sScreenHeight
+#define AutoLayoutFunctionBtnWidth(width) KScreenWidth*(width)/iPhone6sScreenWidth
+#define AutoLayoutFunctionBtnHeight(height) KScreenHeight*(height)/iPhone6sScreenHeight
 
 @interface ShowImageVC ()
 
@@ -27,7 +35,7 @@
     
     self.view.backgroundColor = [UIColor blackColor];
     
-    UIImage *newImage = [self imageAddText:self.dataImage text:self.location];
+    UIImage *newImage = [self imageAddText:self.dataImage text:self.location name:self.name];
     
     UIImageView *imageView = [[UIImageView alloc]initWithImage:newImage];
     
@@ -73,7 +81,7 @@
 }
 
 // 给图片添加文字水印：
-- (UIImage *)imageAddText:(UIImage *)img text:(NSString *)logoText{
+- (UIImage *)imageAddText:(UIImage *)img text:(NSString *)logoText name:(NSString *)name{
     
     NSString* mark = logoText;
     
@@ -82,35 +90,65 @@
     
     UIGraphicsBeginImageContext(img.size);
     [img drawInRect:CGRectMake(0, 0, w, h)];
-    NSDictionary *attr = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:15], NSForegroundColorAttributeName : [UIColor whiteColor]  };
-
+    
+    // 图片icon
+    UIImage *locationIcon = [UIImage imageNamed:@"location"];
+    UIImage *contactIcon = [UIImage imageNamed:@"contact"];
+    
+    // 文字样式
+    NSDictionary *hourStyle = @{NSFontAttributeName: [UIFont systemFontOfSize:45], NSForegroundColorAttributeName: [UIColor whiteColor]};
+    NSDictionary *dayStyle = @{NSFontAttributeName: [UIFont systemFontOfSize:25], NSForegroundColorAttributeName: [UIColor whiteColor]};
+    NSDictionary *weekStyle = @{NSFontAttributeName: [UIFont boldSystemFontOfSize:25], NSForegroundColorAttributeName: [UIColor whiteColor]};
+    NSDictionary *lineStyle = @{NSBackgroundColorAttributeName: [UIColor whiteColor]};
+    
     //获取当前时间
     NSDateFormatter *formatter = [[NSDateFormatter alloc] init];
-    [formatter setDateFormat:@"YYYY年MM月dd日 HH:mm"];
+    [formatter setDateFormat:@"YYYY.MM.dd"];
+    NSDateFormatter *timeFormatter = [[NSDateFormatter alloc]init];
+    [timeFormatter setDateFormat:@"HH:mm"];
     NSDate *dateNow = [NSDate date];
+    NSString *weekStr = [self weekdayStringFromDate:dateNow];
     NSString *currentTimeString = [formatter stringFromDate:dateNow];
-    
+    NSString *timeStr = [timeFormatter stringFromDate:dateNow];
+    NSString *lineStr = @"\n \n \n \n \n \n \n \n \n \n \n";
 
     //位置显示
-    if (mark && mark.length <= 20) {
-        
-        [currentTimeString drawInRect:CGRectMake(10, h - 45, w*0.8, h*0.3) withAttributes:attr];
-        [mark drawInRect:CGRectMake(10, h - 25, w*0.8, h*0.5) withAttributes:attr];
-    }
-    else if (mark && mark.length > 20 ) {
-        
-        [currentTimeString drawInRect:CGRectMake(10, h - 60, w*0.8, h*0.3) withAttributes:attr];
-        [mark drawInRect:CGRectMake(10, h - 40, w*0.8, h*0.5) withAttributes:attr];
-    }
-    else{
-        
-        [currentTimeString drawInRect:CGRectMake(10, h - 25, w*0.8, h*0.3) withAttributes:attr];
-    }
+    [lineStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(10), AutoLayoutFunctionBtnSizeY(30), AutoLayoutFunctionBtnWidth(5), AutoLayoutFunctionBtnHeight(120)) withAttributes:lineStyle];
+    
+    [timeStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(25), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(45)) withAttributes:hourStyle];
+    [currentTimeString drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(135), AutoLayoutFunctionBtnSizeY(42), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    [weekStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(255), AutoLayoutFunctionBtnSizeY(41), AutoLayoutFunctionBtnWidth(80), AutoLayoutFunctionBtnHeight(40)) withAttributes:weekStyle];
+    
+    [locationIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(80), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
+    
+    [mark drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(60), AutoLayoutFunctionBtnSizeY(80), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    
+    [contactIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(120), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
+    
+    [name drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(60), AutoLayoutFunctionBtnSizeY(120), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
     
     UIImage *aimg = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
     
     return aimg;
+}
+
+- (NSString*)weekdayStringFromDate:(NSDate*)inputDate {
+    
+    NSArray *weekdays = [NSArray arrayWithObjects: [NSNull null], @"星期天", @"星期一", @"星期二", @"星期三", @"星期四", @"星期五", @"星期六", nil];
+    
+    NSCalendar *calendar = [[NSCalendar alloc] initWithCalendarIdentifier:NSCalendarIdentifierGregorian];
+    
+    NSTimeZone *timeZone = [[NSTimeZone alloc] initWithName:@"Asia/Shanghai"];
+    
+    [calendar setTimeZone: timeZone];
+    
+    NSCalendarUnit calendarUnit = NSCalendarUnitWeekday;
+    
+    NSDateComponents *theComponents = [calendar components:calendarUnit fromDate:inputDate];
+    
+    return [weekdays objectAtIndex:theComponents.weekday];
+    
 }
 
 

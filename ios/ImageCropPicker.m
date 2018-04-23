@@ -136,7 +136,7 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
     [self setConfiguration:options resolver:resolve rejecter:reject];
     self.currentSelectionMode = CAMERA;
     self.vc.location = [options objectForKey:@"address"];
-    
+    self.vc.name = [options objectForKey:@"name"];
 #if TARGET_IPHONE_SIMULATOR
     self.reject(ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_KEY, ERROR_PICKER_CANNOT_RUN_CAMERA_ON_SIMULATOR_MSG, nil);
     return;
