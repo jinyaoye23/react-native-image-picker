@@ -334,12 +334,13 @@
         
 
         UIImage *image = [UIImage imageWithData:imageData];
-        image = [self image:image scaleToSize:CGSizeMake(KScreenWidth, KScreenHeight)];
-        image = [self imageFromImage:image inRect:CGRectMake(0, KScreenHeight * 0.08, KScreenWidth, KScreenHeight * 0.85)];
+//        image = [self image:image scaleToSize:CGSizeMake(KScreenWidth, KScreenHeight)];
+//        image = [self imageFromImage:image inRect:CGRectMake(100, KScreenHeight * 0.85, KScreenWidth, KScreenHeight * 0.85)];
         
         ShowImageVC *showVC = [[ShowImageVC alloc]init];
         showVC.dataImage = image;
         showVC.location = self.location;
+        showVC.name = self.name;
         [[self getRootVC] presentViewController:showVC animated:YES completion:nil];
         
     }];
@@ -388,6 +389,7 @@
     //返回剪裁后的图片
     return newImage;
 }
+
 
 /**
  * 保存图片到相册
