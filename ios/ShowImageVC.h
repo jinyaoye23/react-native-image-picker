@@ -15,4 +15,8 @@
 @property(nonatomic, strong) NSString *location;
 
 @property(nonatomic, strong) NSString *name;
+
+@property(nonatomic, strong) UIViewController *superVC;
+
+@property(nonatomic)BOOL isAcross;
 @end

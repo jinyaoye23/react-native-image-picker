@@ -12,8 +12,8 @@
 
 #define iPhone6sScreenWidth 375.0
 #define iPhone6sScreenHeight 667.0
-#define KScreenWidth  [UIScreen mainScreen].bounds.size.width
-#define KScreenHeight  [UIScreen mainScreen].bounds.size.height
+#define KScreenWidth [UIScreen mainScreen].bounds.size.width
+#define KScreenHeight [UIScreen mainScreen].bounds.size.height
 //功能页面按钮的自动布局
 #define AutoLayoutFunctionBtnSizeX(X) KScreenWidth*(X)/iPhone6sScreenWidth
 #define AutoLayoutFunctionBtnSizeY(Y) KScreenHeight*(Y)/iPhone6sScreenHeight
@@ -39,8 +39,17 @@
     
     UIImageView *imageView = [[UIImageView alloc]initWithImage:newImage];
     
+    
+    
 //    imageView.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
-    imageView.frame = CGRectMake(0, KScreenHeight * 0.05, KScreenWidth, KScreenHeight * 0.85);
+    if (self.isAcross) {
+        imageView.frame = imageView.frame = CGRectMake(0, 0, KScreenWidth, AutoLayoutFunctionBtnHeight(210));
+        imageView.center = CGPointMake(KScreenWidth / 2, KScreenHeight / 2);
+    }
+    else{
+      imageView.frame = CGRectMake(0, KScreenHeight * 0.05, KScreenWidth, KScreenHeight * 0.85);
+    }
+    imageView.contentMode = UIViewContentModeScaleToFill;
     [self.view addSubview:imageView];
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
@@ -74,10 +83,11 @@
 
 -(void) makeSureImage {
     
-    NSNotification *notification = [NSNotification notificationWithName:@"image" object:self.dataImage];
+    NSDictionary * dic = [NSDictionary dictionaryWithObjectsAndKeys:self.dataImage,@"image", self.superVC, @"view", nil];
+    
+    NSNotification *notification = [NSNotification notificationWithName:@"image" object:dic];
     
     [[NSNotificationCenter defaultCenter] postNotification:notification];
-    
 }
 
 // 给图片添加文字水印：
