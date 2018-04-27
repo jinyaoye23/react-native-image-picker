@@ -8,15 +8,18 @@ import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
+import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.MediaMetadataRetriever;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
 import android.provider.MediaStore;
 import android.util.Base64;
 import android.util.Log;
+import android.view.View;
 import android.webkit.MimeTypeMap;
 import android.widget.Button;
 import android.widget.Toast;
@@ -36,6 +39,7 @@ import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
 import com.nostra13.universalimageloader.utils.L;
+import com.squareup.picasso.Picasso;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
 import com.yalantis.ucrop.model.AspectRatio;
@@ -70,6 +74,7 @@ import cn.finalteam.rxgalleryfinal.utils.FileUtils;
 import cn.finalteam.rxgalleryfinal.utils.Logger;
 import cn.finalteam.rxgalleryfinal.utils.SimpleDateUtils;
 import cn.finalteam.rxgalleryfinal.utils.ThemeUtils;
+import id.zelory.compressor.Compressor;
 
 class PickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private static final String E_ACTIVITY_DOES_NOT_EXIST = "E_ACTIVITY_DOES_NOT_EXIST";
@@ -95,7 +100,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     private int width = 200;
     private int height = 200;
     private int maxSize = 9;
-    private int maxImageSize ;
+    private int maxImageSize;
 
     private int compressQuality = -1;
     private boolean returnAfterShot = false;
@@ -154,38 +159,45 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         return type;
     }
 
+
+    public static Bitmap zoomImage(Bitmap bgimage, double newWidth, double newHeight) {
+        // 获取这个图片的宽和高
+        float width = bgimage.getWidth();
+        float height = bgimage.getHeight();
+        // 创建操作图片用的matrix对象
+        Matrix matrix = new Matrix();
+        // 计算宽高缩放率
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // 缩放图片动作
+        matrix.postScale(scaleWidth, scaleHeight);
+        Bitmap bitmap = Bitmap.createBitmap(bgimage, 0, 0, (int) width, (int) height, matrix, true);
+        return bitmap;
+    }
+
     private WritableMap getAsyncSelection(final Activity activity, String path) throws Exception {
         String mime = getMimeType(path);
         if (mime != null && mime.startsWith("video/")) {
             return getVideo(activity, path, mime);
         }
 
-        if(maxImageSize!=-1){
-            //add-----质量处理
-            FileInputStream fis = new FileInputStream(path);
-            Bitmap bitmap = BitmapFactory.decodeStream(fis);
-            if (bitmap.getByteCount()/ 1024<maxImageSize){
-                return getImage(activity, path);
-            }
-            ByteArrayInputStream isBm = compressImage(bitmap);
 
-            Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
-                    + ".jpg");
-
-            File f = new File(img_savepath);
-            if (!f.exists()) {
-                f.mkdirs();
-            }
-
-            String newpath = myimageUri.toString();
-            if (newpath.startsWith("file://")) {
-                newpath = newpath.substring(7, newpath.length());
-            }
-
-            setnewpath(isBm, newpath);
-            //add-----质量处理end
-            return getImage(activity, newpath);
-        }
+        //add-----质量处理
+//        Log.d("aaa", path+"--质量处理");
+//        try {
+//            Integer maxWidth = options.hasKey("width") ? options.getInt("width") : null;
+//            Integer maxHeight = options.hasKey("height") ? options.getInt("height") : null;
+//            Integer quality = options.hasKey("compressQuality") ? options.getInt("compressQuality") : null;
+//
+//
+//            String pathout = PickerModule.img_savepath.substring(0, PickerModule.img_savepath.length() - 1);
+//            FileInputStream fis = new FileInputStream(path);
+//            FileOutputStream fiout = new FileOutputStream(pathout+"/11.jpg");
+//            Bitmap bitmap = BitmapFactory.decodeStream(fis);
+//            zoomImage(bitmap, maxWidth, maxHeight).compress(Bitmap.CompressFormat.JPEG, quality, fiout);
+//
+//        } catch (Exception e) {
+//        }
 
         return getImage(activity, path);
 
@@ -229,19 +241,29 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             throw new Exception("Cannot select remote files");
         }
         validateImage(path);
+        File f = new File(path);
 
-        // if compression options are provided image will be compressed. If none options is provided,
-        // then original image will be returned
-        File compressedImage = compression.compressImage(activity, options, path);
+        Log.d("aaa", f.length() / 1024 + "--f.len-");
+        File compressedImage;
+        if (f.length() / 1024 > maxImageSize) {
+            compressedImage = compression.compressImage(activity, options, path);
+            if (path.contains("mogu/CameraPic")) {
+                f.delete();
+            }
+        } else {
+            compressedImage = f;
+        }
+
+
         String compressedImagePath = compressedImage.getPath();
         BitmapFactory.Options options = validateImage(compressedImagePath);
 
-        image.putString("path", "file://" + path);
+        image.putString("path", "file://" + compressedImage.getAbsolutePath());
         image.putInt("width", options.outWidth);
         image.putInt("height", options.outHeight);
         image.putString("mime", options.outMimeType);
         image.putInt("size", (int) new File(compressedImagePath).length());
-        Log.d("aaa", "---999");
+        Log.d("aaa", compressedImage.getAbsolutePath() + "---999");
         if (includeBase64) {
             image.putString("data", getBase64StringFromFile(compressedImagePath));
         }
@@ -294,7 +316,36 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         imageUri = myimageUri.toString();
         Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
         cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, myimageUri);
+
+        activityhide();
         activity.startActivityForResult(cameraIntent, TAKE_IMAGE_REQUEST_CODE);
+//        activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
+
+
+    }
+
+    public void activityhide() {
+        activity.runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                //此时已在主线程中，可以更新UI了
+                activity.setVisible(false);
+            }
+        });
+
+        new Handler().postDelayed(new Runnable() {
+            public void run() {
+                //execute the task
+                activity.runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        //此时已在主线程中，可以更新UI了
+                        activity.setVisible(true);
+                    }
+                });
+
+            }
+        }, 1000);
 
     }
 
@@ -304,34 +355,39 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     public static final String SDCARD = Environment
             .getExternalStorageDirectory().toString();
-    private String img_savepath = cacheDir + "/";
     public static final String appDirName = "mogu";
     public static final String cacheDir = SDCARD + "/" + appDirName + "/"
             + "CameraPic";
-    public   int dip2px(Context context, float dpValue) {
+    public static String img_savepath = cacheDir + "/";
+
+    public int dip2px(Context context, float dpValue) {
         float scale = context.getResources().getDisplayMetrics().density;
+        Log.d("aaa", scale + "----scale");
         return (int) (dpValue * scale + 0.5f);
+//        return (int) (dpValue * 1 + 0.5f);
+
     }
 
 
-    public  int gettextWidth(Paint p  ,String str){
+    public int gettextWidth(Paint p, String str) {
 
         int textWidth = 0;
         Rect bounds = new Rect();
         p.getTextBounds(str, 0, str.length(), bounds);
-        textWidth = bounds.right-bounds.left;
-        return  textWidth;
+        textWidth = bounds.right - bounds.left;
+        return textWidth;
 
     }
-    public  int gettextHeight(Paint p  ){
+
+    public int gettextHeight(Paint p) {
 
         int textHeight = 0;
         Paint.FontMetricsInt fontMetrics = p.getFontMetricsInt();
-        textHeight = fontMetrics.bottom-fontMetrics.top;
+        textHeight = fontMetrics.bottom - fontMetrics.top;
         return textHeight;
     }
 
-    public  String getWeek() {
+    public String getWeek() {
         Calendar cal = Calendar.getInstance();
         int i = cal.get(Calendar.DAY_OF_WEEK);
         switch (i) {
@@ -390,32 +446,32 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
 //        canvas.drawText(address, drawx, drawy, p);
         //水印日期
-        int baseLineY = dip2px(mReactContext,17);
-        int baseLineX = dip2px(mReactContext,17);
+        int baseLineY = dip2px(mReactContext, 17);
+        int baseLineX = dip2px(mReactContext, 17);
         //字体大小
-        float txtsize = dip2px(mReactContext,45);
-        float paddingnum= dip2px(mReactContext,10);
-        float line1y=baseLineX+txtsize-dip2px(mReactContext,5);
+        float txtsize = dip2px(mReactContext, 45);
+        float paddingnum = dip2px(mReactContext, 10);
+        float line1y = baseLineX + txtsize - dip2px(mReactContext, 5);
 
-        String time=mark.substring(mark.length()-5,mark.length());//时分
+        String time = mark.substring(mark.length() - 5, mark.length());//时分
         Paint p_time = new Paint();
         p_time.setAntiAlias(true);// 去锯齿
         p_time.setFakeBoldText(true);//加粗
         p_time.setColor(Color.WHITE);
         p_time.setTextSize(txtsize);
-        canvas.drawText(time, baseLineX+paddingnum, line1y, p_time);
+        canvas.drawText(time, baseLineX + paddingnum, line1y, p_time);
 
-        int p_timey= gettextHeight(p_time);
-        Log.d("aaa",p_timey+"----p_timey");
+        int p_timey = gettextHeight(p_time);
+        Log.d("aaa", p_timey + "----p_timey");
 
         //日期
-        String data=mark.substring(0,mark.length()-6);
-        String datas[]=data.split("-");
-        String datanew=datas[0]+"."+datas[1]+"."+datas[2];
+        String data = mark.substring(0, mark.length() - 6);
+        String datas[] = data.split("-");
+        String datanew = datas[0] + "." + datas[1] + "." + datas[2];
 
-        float datex=baseLineX+paddingnum+gettextWidth(p_time,time)+dip2px(mReactContext,15);
+        float datex = baseLineX + paddingnum + gettextWidth(p_time, time) + dip2px(mReactContext, 15);
 
-        float datasize = dip2px(mReactContext,20);
+        float datasize = dip2px(mReactContext, 20);
         Paint p_data = new Paint();
         p_data.setAntiAlias(true);// 去锯齿
         p_data.setFakeBoldText(true);
@@ -424,67 +480,66 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         canvas.drawText(datanew, datex, line1y, p_data);
 
         //星期
-        float weekend=datex+gettextWidth(p_data,datanew)+dip2px(mReactContext,10);
-        String weekvalue=getWeek();
-        float weeksize = dip2px(mReactContext,20);
+        float weekend = datex + gettextWidth(p_data, datanew) + dip2px(mReactContext, 10);
+        String weekvalue = getWeek();
+        float weeksize = dip2px(mReactContext, 20);
 
-        Paint p_weekend= new Paint();
+        Paint p_weekend = new Paint();
         p_weekend.setAntiAlias(true);// 去锯齿
         p_weekend.setFakeBoldText(true);
         p_weekend.setColor(Color.WHITE);
         p_weekend.setTextSize(weeksize);
         canvas.drawText(weekvalue, weekend, line1y, p_weekend);
 
-        float line2y=line1y+dip2px(mReactContext,30);
-        float txtaddress = dip2px(mReactContext,19);
+        float line2y = line1y + dip2px(mReactContext, 30);
+        float txtaddress = dip2px(mReactContext, 19);
         Paint p_address = new Paint();
         p_address.setAntiAlias(true);// 去锯齿
         p_address.setFakeBoldText(true);//加粗
         p_address.setColor(Color.WHITE);
         p_address.setTextSize(txtaddress);
-        if(!address.equals("")){
-            line2y=line2y+paddingnum;
+        if (!address.equals("")) {
+            line2y = line2y + paddingnum;
 
             //地址图标
             //在画布上绘制水印图片
             Resources res = mReactContext.getResources();
-            Bitmap watermark= BitmapFactory.decodeResource(res, R.drawable.location);
-            canvas.drawBitmap(watermark, baseLineX+paddingnum, line2y-dip2px(mReactContext,20), null);
-
+            Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.location);
+            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y - dip2px(mReactContext, 20), null);
 
 
             //地址
-            int addressnum=address.length();
-            int endnum=0;
-            List<String> txts=new ArrayList<String>();
+            int addressnum = address.length();
+            int endnum = 0;
+            List<String> txts = new ArrayList<String>();
 
-            for(int i=0;i<addressnum;i++){
-                endnum=i+16;
-                if(endnum>=addressnum){
-                    endnum=addressnum;
+            for (int i = 0; i < addressnum; i++) {
+                endnum = i + 16;
+                if (endnum >= addressnum) {
+                    endnum = addressnum;
                 }
-                String txt= address.substring(i,endnum);
+                String txt = address.substring(i, endnum);
                 txts.add(txt);
-                i=endnum;
+                i = endnum;
 
             }
-            for(int i=0;i<txts.size();i++){
-                String txt=txts.get(i);
-                if(i!=0){
-                    line2y=line2y+txtaddress+paddingnum;
+            for (int i = 0; i < txts.size(); i++) {
+                String txt = txts.get(i);
+                if (i != 0) {
+                    line2y = line2y + txtaddress + paddingnum;
                 }
-                canvas.drawText(txt, baseLineX+paddingnum+dip2px(mReactContext,30), line2y, p_address);
+                canvas.drawText(txt, baseLineX + paddingnum + dip2px(mReactContext, 30), line2y, p_address);
             }
         }
         //name
-        if(!name.equals("")) {
-            line2y=line2y+paddingnum;
+        if (!name.equals("")) {
+            line2y = line2y + paddingnum;
             Resources res = mReactContext.getResources();
-            Bitmap watermark= BitmapFactory.decodeResource(res, R.drawable.person);
-            canvas.drawBitmap(watermark, baseLineX+paddingnum, line2y+dip2px(mReactContext,8), null);
+            Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.person);
+            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y + dip2px(mReactContext, 8), null);
 
-            line2y=line2y+txtaddress+paddingnum;
-            canvas.drawText(name, baseLineX+paddingnum+dip2px(mReactContext,30), line2y, p_address);
+            line2y = line2y + txtaddress + paddingnum;
+            canvas.drawText(name, baseLineX + paddingnum + dip2px(mReactContext, 30), line2y, p_address);
         }
 
 
@@ -493,8 +548,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         p_line.setAntiAlias(true);// 去锯齿
         p_line.setFakeBoldText(true);
         p_line.setColor(Color.WHITE);
-        p_line.setStrokeWidth(10.0f);
-        canvas.drawLine(baseLineX,baseLineX,baseLineX,line2y+paddingnum,p_line);
+        p_line.setStrokeWidth(6.0f);
+        canvas.drawLine(baseLineX, baseLineX, baseLineX, line2y + paddingnum, p_line);
 
         canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
@@ -548,6 +603,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             WritableArray resultArr = new WritableNativeArray();
             resultArr.pushMap(getAsyncSelection2(activity, path));
             mPickerPromise.resolve(resultArr);
+
+
         } catch (Exception e) {
         }
 
@@ -566,7 +623,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             Bitmap bitmap = BitmapFactory.decodeStream(fis);
 
             if (bitmap == null) {
-                return ;
+                return;
             }
 
             //水印----日期生成
@@ -578,8 +635,14 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             //带水印Bitmap
             Bitmap newbitmap = createWatermark(bitmap, str);
 
+            String path2 = PickerModule.img_savepath.substring(0, PickerModule.img_savepath.length() - 1);
+            String p = path2 + "/" + System.currentTimeMillis() + ".jpg";
+            FileOutputStream fisout = new FileOutputStream(p);
+            newbitmap.compress(Bitmap.CompressFormat.JPEG, 70, fisout);
+            new File(path).delete();
+            imageUri = "file://" + p;
             //取代原照片
-            setnewpath2(newbitmap, path);
+//            setnewpath2(newbitmap, path);
 
 
         } catch (Exception e) {
@@ -628,7 +691,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
 
     public ByteArrayInputStream compressImage(Bitmap image) {
-        Log.d("aaa",maxImageSize+"");
+        Log.d("aaa", maxImageSize + "");
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         int options = 100;
         image.compress(Bitmap.CompressFormat.JPEG, options, baos);// 质量压缩方法，这里100表示不压缩，把压缩后的数据存放到baos中
@@ -801,6 +864,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     public void openCamera(final ReadableMap options, final Promise promise) {
 
         activity = getCurrentActivity();
+        Log.d("aaa", activity.getLocalClassName() + "---");
 
         if (activity == null) {
             promise.reject(E_ACTIVITY_DOES_NOT_EXIST, "Activity doesn't exist");
@@ -821,6 +885,11 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         if (activity == null) {
             promise.reject(E_ACTIVITY_DOES_NOT_EXIST, "Activity doesn't exist");
             return;
+        }
+
+        File f = new File(img_savepath);
+        if (!f.exists()) {
+            f.mkdirs();
         }
 
         setConfiguration(options);
@@ -881,6 +950,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 //            openCamera();
 //            return;
 //        }
+        activityhide();
         if (!this.multiple) {
             if (cropping) {
                 rxGalleryFinal.crop();
@@ -1005,40 +1075,44 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     public void onNewIntent(Intent intent) {
 
     }
+
     public void setmaxImageSize(String path) {
-        Log.d("aaa",path);
         if (path.startsWith("file://")) {
             path = path.substring(7, path.length());
         }
-        if(maxImageSize!=-1){
-            try{
-                FileInputStream fis = new FileInputStream(path);
-                Bitmap bitmap = BitmapFactory.decodeStream(fis);
-
-                if (bitmap == null) {
-                    return;
-                }
-                ByteArrayInputStream isBm =compressImage(bitmap);
-                //取代原照片
-                setnewpath(isBm, path);
-            }catch (Exception e){
-
-            }
-        }
+//        if (maxImageSize != -1) {
+//            try {
+//                FileInputStream fis = new FileInputStream(path);
+//                Bitmap bitmap = BitmapFactory.decodeStream(fis);
+//
+//                if (bitmap == null) {
+//                    return;
+//                }
+//                ByteArrayInputStream isBm = compressImage(bitmap);
+//                //取代原照片
+//                setnewpath(isBm, path);
+//            } catch (Exception e) {
+//
+//            }
+//        }
 
         posturl(path);
     }
+
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
 
 
         if (requestCode == TAKE_IMAGE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
 
-            String path=imageUri;
+            String path = imageUri;
+
             //水印处理
             if (isWaterMark) {
                 setWaterMark(path);
+                path = imageUri;
             }
+
 
             //裁剪处理
             if (cropping) {
@@ -1053,7 +1127,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
         if (requestCode == crop_REQUEST_CODE) {
 
-            String path=imageUri;
+            String path = imageUri;
             if (path.startsWith("file://")) {
                 path = path.substring(7, path.length());
             }
@@ -1074,11 +1148,11 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     Uri OUTUri;
 
     public void crop2(String path) {
-        if(path==null){
+        if (path == null) {
             return;
         }
         if (!path.startsWith("file://")) {
-            path = "file://"+path;
+            path = "file://" + path;
         }
         setTheme();
 //
