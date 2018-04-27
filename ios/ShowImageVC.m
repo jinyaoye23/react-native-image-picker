@@ -121,21 +121,23 @@
     NSString *currentTimeString = [formatter stringFromDate:dateNow];
     NSString *timeStr = [timeFormatter stringFromDate:dateNow];
     NSString *lineStr = @"\n \n \n \n \n \n \n \n \n \n \n";
-
+    
+    CGFloat xDistance = 30.0;
+    
     //位置显示
-    [lineStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(10), AutoLayoutFunctionBtnSizeY(30), AutoLayoutFunctionBtnWidth(5), AutoLayoutFunctionBtnHeight(120)) withAttributes:lineStyle];
+    [lineStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance), AutoLayoutFunctionBtnSizeY(30), AutoLayoutFunctionBtnWidth(5), AutoLayoutFunctionBtnHeight(120)) withAttributes:lineStyle];
     
-    [timeStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(25), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(45)) withAttributes:hourStyle];
-    [currentTimeString drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(135), AutoLayoutFunctionBtnSizeY(42), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
-    [weekStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(255), AutoLayoutFunctionBtnSizeY(41), AutoLayoutFunctionBtnWidth(80), AutoLayoutFunctionBtnHeight(40)) withAttributes:weekStyle];
+    [timeStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(25), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(45)) withAttributes:hourStyle];
+    [currentTimeString drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 140), AutoLayoutFunctionBtnSizeY(42), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    [weekStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 260), AutoLayoutFunctionBtnSizeY(41), AutoLayoutFunctionBtnWidth(80), AutoLayoutFunctionBtnHeight(40)) withAttributes:weekStyle];
     
-    [locationIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(80), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
+    [locationIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(80), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
     
-    [mark drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(60), AutoLayoutFunctionBtnSizeY(80), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    [mark drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 50), AutoLayoutFunctionBtnSizeY(80), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
     
-    [contactIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(25), AutoLayoutFunctionBtnSizeY(120), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
+    [contactIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(120), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
     
-    [name drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(60), AutoLayoutFunctionBtnSizeY(120), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    [name drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 50), AutoLayoutFunctionBtnSizeY(120), w, AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
     
     UIImage *aimg = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
