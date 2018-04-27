@@ -23,8 +23,12 @@
 //将拍摄好的照片写入系统相册中，所以我们在这里还需要导入一个相册需要的头文件iOS8
 #import <Photos/Photos.h>
 #import "ShowImageVC.h"
+#import "UIImage+DJResize.h"
+#import "Orientation.h"
+#import "DeviceOrientation.h"
 
-@interface MuguCameraVC ()<UIAlertViewDelegate>
+
+@interface MuguCameraVC ()<UIAlertViewDelegate,DeviceOrientationDelegate>
 
 //捕获设备，通常是前置摄像头，后置摄像头，麦克风（音频输入）
 @property(nonatomic)AVCaptureDevice *device;
@@ -43,6 +47,10 @@
 
 //图像预览层，实时显示捕获的图像
 @property(nonatomic)AVCaptureVideoPreviewLayer *previewLayer;
+
+@property (strong, nonatomic) DeviceOrientation *deviceMotion;
+
+@property (nonatomic)NSString *directionStr;
 
 // ------------- UI --------------
 //拍照按钮
@@ -63,6 +71,8 @@
     [super viewDidLoad];
     self.view.backgroundColor = [UIColor blackColor];
     
+    self.deviceMotion = [[DeviceOrientation alloc]initWithDelegate:self];
+    
     if ( [self checkCameraPermission]) {
         
         [self customCamera];
@@ -75,12 +85,59 @@
         [self prefersStatusBarHidden];
         
         self.flag = 0;
+        
+        // RN禁止原生组件横屏效果
+        [Orientation setOrientation:UIInterfaceOrientationMaskPortrait];
+        
+        
+        [self.deviceMotion startMonitor];
     }
 }
+
+- (void)viewWillAppear:(BOOL)animated{
+    
+    [super viewWillAppear:YES];
+    
+    if (self.session) {
+        
+        [self.session startRunning];
+    }
+}
+
+- (void)viewDidDisappear:(BOOL)animated{
+    
+    [super viewDidDisappear:YES];
+    
+    if (self.session) {
+        
+        [self.session stopRunning];
+    }
+}
+
 //隐藏单个页面电池条的方法
 
 - (BOOL)prefersStatusBarHidden{
     return YES;  //隐藏
+}
+
+- (void)directionChange:(TgDirection)direction {
+    
+    switch (direction) {
+        case TgDirectionPortrait:
+            self.directionStr = @"protrait";
+            break;
+        case TgDirectionDown:
+            self.directionStr = @"down";
+            break;
+        case TgDirectionRight:
+            self.directionStr = @"right";
+            break;
+        case TgDirectionleft:
+            self.directionStr = @"left";
+            break;
+        default:
+            break;
+    }
 }
 
 - (UIViewController*) getRootVC {
@@ -122,16 +179,19 @@
         [self.session addOutput:self.ImageOutPut];
     }
     
+    
     //使用self.session，初始化预览层，self.session负责驱动input进行信息的采集，layer负责把图像渲染显示
     self.previewLayer = [[AVCaptureVideoPreviewLayer alloc]initWithSession:self.session];
-//    self.previewLayer.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
+    //    self.previewLayer.frame = CGRectMake(0, 0, KScreenWidth, KScreenHeight);
     self.previewLayer.frame = CGRectMake(0, KScreenHeight * 0.05, KScreenWidth, KScreenHeight * 0.85);
     self.previewLayer.videoGravity = AVLayerVideoGravityResizeAspectFill;
     
     [self.view.layer addSublayer:self.previewLayer];
+
     
     //开始启动
     [self.session startRunning];
+    
     
     //修改设备的属性，先加锁
     if ([self.device lockForConfiguration:nil]) {
@@ -141,9 +201,13 @@
             [self.device setWhiteBalanceMode:AVCaptureWhiteBalanceModeAutoWhiteBalance];
         }
         
+        //闪光灯自动
+        if ([self.device isFlashModeSupported:AVCaptureFlashModeAuto]) {
+            [self.device setFlashMode:AVCaptureFlashModeAuto];
+        }
+        
         //解锁
         [self.device unlockForConfiguration];
-        
     }
     
 }
@@ -164,12 +228,12 @@
     [self.view addSubview:self.focusView];
     self.focusView.hidden = YES;
     
-    self.flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
-    self.flashButton.frame = CGRectMake(15, 5, 20, 20);
-    [self.flashButton setImage:[UIImage imageNamed:@"flashClose"] forState:UIControlStateNormal];
-    
-    [self.flashButton addTarget:self action:@selector(changeFlash:) forControlEvents:UIControlEventTouchUpInside];
-    [self.view addSubview:self.flashButton];
+//    self.flashButton = [UIButton buttonWithType:UIButtonTypeCustom];
+//    self.flashButton.frame = CGRectMake(15, 15, 20, 20);
+//    [self.flashButton setImage:[UIImage imageNamed:@"flashClose"] forState:UIControlStateNormal];
+//
+//    [self.flashButton addTarget:self action:@selector(changeFlash:) forControlEvents:UIControlEventTouchUpInside];
+//    [self.view addSubview:self.flashButton];
     
     UIButton *leftButton = [UIButton buttonWithType:UIButtonTypeCustom];
     [leftButton setTitle:@"取消" forState:UIControlStateNormal];
@@ -320,74 +384,75 @@
 - (void)shutterCamera
 {
     AVCaptureConnection * videoConnection = [self.ImageOutPut connectionWithMediaType:AVMediaTypeVideo];
+    
+    UIDeviceOrientation curDeviceOrientation = [[UIDevice currentDevice] orientation];
+    AVCaptureVideoOrientation avcaptureOrientation = [self avOrientationForDeviceOrientation:curDeviceOrientation];
+    
+    [videoConnection setVideoOrientation:avcaptureOrientation];
+    [videoConnection setVideoScaleAndCropFactor:1.0];
+    
+    
     if (videoConnection ==  nil) {
         return;
     }
+
     
+    __weak typeof(self) weak = self;
     [self.ImageOutPut captureStillImageAsynchronouslyFromConnection:videoConnection completionHandler:^(CMSampleBufferRef imageDataSampleBuffer, NSError *error) {
         
         if (imageDataSampleBuffer == nil) {
             return;
         }
         
-        NSData *imageData =  [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
-        
+        if (avcaptureOrientation == 3 || avcaptureOrientation == 4 || [self.directionStr isEqualToString:@"left"] || [self.directionStr isEqualToString:@"right"]) {
+            NSData *imageData =  [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
+            UIImage *originImage = [[UIImage alloc] initWithData:imageData];
+            
+            ShowImageVC *showVC = [[ShowImageVC alloc]init];
+            showVC.dataImage = originImage;
+            showVC.location = self.location;
+            showVC.name = self.name;
+            showVC.superVC = self;
+            showVC.isAcross = YES;
+            [self.deviceMotion startMonitor];
+            [self presentViewController:showVC animated:YES completion:nil];
 
-        UIImage *image = [UIImage imageWithData:imageData];
-//        image = [self image:image scaleToSize:CGSizeMake(KScreenWidth, KScreenHeight)];
-//        image = [self imageFromImage:image inRect:CGRectMake(100, KScreenHeight * 0.85, KScreenWidth, KScreenHeight * 0.85)];
-        
-        ShowImageVC *showVC = [[ShowImageVC alloc]init];
-        showVC.dataImage = image;
-        showVC.location = self.location;
-        showVC.name = self.name;
-        [[self getRootVC] presentViewController:showVC animated:YES completion:nil];
-        
+        }
+        else {
+            NSData *imageData =  [AVCaptureStillImageOutput jpegStillImageNSDataRepresentation:imageDataSampleBuffer];
+            UIImage *originImage = [[UIImage alloc] initWithData:imageData];
+            NSLog(@"originImage=%@",originImage);
+            CGFloat squareLength = weak.previewLayer.bounds.size.width;
+            CGFloat previewLayerH = weak.previewLayer.bounds.size.height;
+            CGSize size = CGSizeMake(squareLength * 2, previewLayerH * 2);
+            UIImage *scaledImage = [originImage resizedImageWithContentMode:UIViewContentModeScaleAspectFill bounds:size interpolationQuality:kCGInterpolationHigh];
+            NSLog(@"scaledImage=%@",scaledImage);
+            CGRect cropFrame = CGRectMake((scaledImage.size.width - size.width) / 2, (scaledImage.size.height - size.height) / 2, size.width, size.height);
+            NSLog(@"cropFrame:%@", [NSValue valueWithCGRect:cropFrame]);
+            UIImage *croppedImage = [scaledImage croppedImage:cropFrame];
+            NSLog(@"croppedImage=%@",croppedImage);
+            
+            ShowImageVC *showVC = [[ShowImageVC alloc]init];
+            showVC.dataImage = croppedImage;
+            showVC.location = self.location;
+            showVC.name = self.name;
+            showVC.superVC = self;
+            showVC.isAcross = NO;
+            [self.deviceMotion startMonitor];
+            [self presentViewController:showVC animated:YES completion:nil];
+        }
+       
     }];
-    
 }
 
-/**
- *将图片缩放到指定的CGSize大小
- * UIImage image 原始的图片
- * CGSize size 要缩放到的大小
- */
-- (UIImage*)image:(UIImage *)image scaleToSize:(CGSize)size{
-    
-    // 得到图片上下文，指定绘制范围
-    UIGraphicsBeginImageContext(size);
-    
-    // 将图片按照指定大小绘制
-    [image drawInRect:CGRectMake(0, 0, size.width, size.height)];
-    
-    // 从当前图片上下文中导出图片
-    UIImage* scaledImage = UIGraphicsGetImageFromCurrentImageContext();
-    
-    // 当前图片上下文出栈
-    UIGraphicsEndImageContext();
-    
-    // 返回新的改变大小后的图片
-    return scaledImage;
-}
-
-/**
- *从图片中按指定的位置大小截取图片的一部分
- * UIImage image 原始的图片
- * CGRect rect 要截取的区域
- */
-- (UIImage *)imageFromImage:(UIImage *)image inRect:(CGRect)rect{
-    
-    //将UIImage转换成CGImageRef
-    CGImageRef sourceImageRef = [image CGImage];
-    
-    //按照给定的矩形区域进行剪裁
-    CGImageRef newImageRef = CGImageCreateWithImageInRect(sourceImageRef, rect);
-    
-    //将CGImageRef转换成UIImage
-    UIImage *newImage = [UIImage imageWithCGImage:newImageRef];
-    
-    //返回剪裁后的图片
-    return newImage;
+- (AVCaptureVideoOrientation)avOrientationForDeviceOrientation:(UIDeviceOrientation)deviceOrientation
+{
+    AVCaptureVideoOrientation result = (AVCaptureVideoOrientation)deviceOrientation;
+    if ( deviceOrientation == UIDeviceOrientationLandscapeLeft || [self.directionStr isEqualToString:@"left"] )
+        result = AVCaptureVideoOrientationLandscapeRight;
+    else if ( deviceOrientation == UIDeviceOrientationLandscapeRight || [self.directionStr isEqualToString:@"right"] )
+        result = AVCaptureVideoOrientationLandscapeLeft;
+    return result;
 }
 
 

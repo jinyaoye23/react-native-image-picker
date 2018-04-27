@@ -173,11 +173,15 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
 }
 
 - (void)InfoNotificationAction:(NSNotification *)notification{
-
-    UIImage *chosenImageT = [notification.object fixOrientation];
     
-    [self processSingleImagePick:chosenImageT withExif:nil withViewController:[self getRootVC] withSourceURL:self.croppingFile[@"sourceURL"] withLocalIdentifier:self.croppingFile[@"localIdentifier"] withFilename:self.croppingFile[@"filename"]];
+    [[notification.object objectForKey:@"view"] dismissViewControllerAnimated:NO completion:nil];
     
+    [NSTimer scheduledTimerWithTimeInterval:0.0 repeats:NO block:^(NSTimer * _Nonnull timer) {
+        
+        UIImage *chosenImageT = [notification.object objectForKey:@"image"];
+        
+        [self processSingleImagePick:chosenImageT withExif:nil withViewController:[notification.object objectForKey:@"view"]  withSourceURL:self.croppingFile[@"sourceURL"] withLocalIdentifier:self.croppingFile[@"localIdentifier"] withFilename:self.croppingFile[@"filename"]];
+    }];
 }
 
 - (void)imagePickerController:(UIImagePickerController *)picker didFinishPickingMediaWithInfo:(NSDictionary *)info {
@@ -624,6 +628,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     
     NSLog(@"id: %@ filename: %@", localIdentifier, filename);
     
+    
     if ([[[self options] objectForKey:@"cropping"] boolValue]) {
         self.croppingFile = [[NSMutableDictionary alloc] init];
         self.croppingFile[@"sourceURL"] = sourceURL;
@@ -646,38 +651,18 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
         
         // Wait for viewController to dismiss before resolving, or we lose the ability to display
         // Alert.alert in the .then() handler.
-        if (self.currentSelectionMode == CAMERA) {
-            UIViewController *vc = [[[[UIApplication sharedApplication] delegate] window] rootViewController];
-            [vc dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
-                self.resolve([self createAttachmentResponse:filePath
-                                                   withExif:exif
-                                              withSourceURL:sourceURL
-                                        withLocalIdentifier:localIdentifier
-                                               withFilename:filename
-                                                  withWidth:imageResult.width
-                                                 withHeight:imageResult.height
-                                                   withMime:imageResult.mime
-                                                   withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
-                                                   withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
-            }]];
-        }
-        else {
-            [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
-                self.resolve([self createAttachmentResponse:filePath
-                                                   withExif:exif
-                                              withSourceURL:sourceURL
-                                        withLocalIdentifier:localIdentifier
-                                               withFilename:filename
-                                                  withWidth:imageResult.width
-                                                 withHeight:imageResult.height
-                                                   withMime:imageResult.mime
-                                                   withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
-                                                   withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
-            }]];
-        }
-      
-                            
-
+        [viewController dismissViewControllerAnimated:YES completion:[self waitAnimationEnd:^{
+            self.resolve([self createAttachmentResponse:filePath
+                                               withExif:exif
+                                          withSourceURL:sourceURL
+                                    withLocalIdentifier:localIdentifier
+                                           withFilename:filename
+                                              withWidth:imageResult.width
+                                             withHeight:imageResult.height
+                                               withMime:imageResult.mime
+                                               withSize:[NSNumber numberWithUnsignedInteger:imageResult.data.length]
+                                               withData:[[self.options objectForKey:@"includeBase64"] boolValue] ? [imageResult.data base64EncodedStringWithOptions:0] : nil]);
+        }]];
     }
 }
 
