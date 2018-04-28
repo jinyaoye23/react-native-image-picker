@@ -507,7 +507,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             Resources res = mReactContext.getResources();
             Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.location);
             watermark = createnewWatermark(watermark);
-            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y - dip2px(mReactContext, 20), null);
+            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y - dip2px(mReactContext, 17), null);
 
 
             //地址
@@ -539,7 +539,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             Resources res = mReactContext.getResources();
             Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.person);
             watermark = createnewWatermark(watermark);
-            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y + dip2px(mReactContext, 8), null);
+            canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y + dip2px(mReactContext, 10), null);
 
             line2y = line2y + txtaddress + paddingnum;
             canvas.drawText(name, baseLineX + paddingnum + dip2px(mReactContext, 30), line2y, p_address);
