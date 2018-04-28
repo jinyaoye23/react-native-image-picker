@@ -361,7 +361,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     public static String img_savepath = cacheDir + "/";
 
     public int dip2px(Context context, float dpValue) {
-        float scale = context.getResources().getDisplayMetrics().density;
+//        float scale = context.getResources().getDisplayMetrics().density;
+        float scale = texts / 500;
         Log.d("aaa", scale + "----scale");
         return (int) (dpValue * scale + 0.5f);
 //        return (int) (dpValue * 1 + 0.5f);
@@ -409,7 +410,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 return "";
         }
     }
-
+    float texts;
     private Bitmap createWatermark(Bitmap target, String mark) {
         int w = target.getWidth();
         int h = target.getHeight();
@@ -426,7 +427,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         p.setColor(Color.WHITE);
 
         // 水印的字体大小
-        float texts = w;
+         texts = w;
         if (h < w) {
             texts = h;
         }
@@ -505,6 +506,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             //在画布上绘制水印图片
             Resources res = mReactContext.getResources();
             Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.location);
+            watermark = createnewWatermark(watermark);
             canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y - dip2px(mReactContext, 20), null);
 
 
@@ -536,6 +538,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             line2y = line2y + paddingnum;
             Resources res = mReactContext.getResources();
             Bitmap watermark = BitmapFactory.decodeResource(res, R.drawable.person);
+            watermark = createnewWatermark(watermark);
             canvas.drawBitmap(watermark, baseLineX + paddingnum, line2y + dip2px(mReactContext, 8), null);
 
             line2y = line2y + txtaddress + paddingnum;
@@ -555,6 +558,23 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         canvas.restore();
 
         return bmp;
+    }
+    public Bitmap createnewWatermark(Bitmap b) {
+        Bitmap bitMap = b;
+        int width = bitMap.getWidth();
+        int height = bitMap.getHeight();
+        // 设置想要的大小
+        int newWidth = (int) texts / 25;
+        int newHeight = (int) texts / 25;
+        // 计算缩放比例
+        float scaleWidth = ((float) newWidth) / width;
+        float scaleHeight = ((float) newHeight) / height;
+        // 取得想要缩放的matrix参数
+        Matrix matrix = new Matrix();
+        matrix.postScale(scaleWidth, scaleHeight);
+        // 得到新的图片
+        bitMap = Bitmap.createBitmap(bitMap, 0, 0, width, height, matrix, true);
+        return bitMap;
     }
 
     private void setnewpath2(Bitmap newbitmap, String path) {
