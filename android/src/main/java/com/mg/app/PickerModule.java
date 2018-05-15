@@ -410,15 +410,18 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 return "";
         }
     }
+
     float texts;
+
     private Bitmap createWatermark(Bitmap target, String mark) {
         int w = target.getWidth();
         int h = target.getHeight();
 
-        Log.d("aaa", w + "----w-");
-        Log.d("aaa", h + "----h-");
 
-        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
+        /*add by david 内存溢出处理 start*/
+        Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.RGB_565);
+        /*add by david 内存溢出处理 end*/
+        //Bitmap bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888);
         Canvas canvas = new Canvas(bmp);
 
         Paint p = new Paint();
@@ -427,7 +430,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         p.setColor(Color.WHITE);
 
         // 水印的字体大小
-         texts = w;
+        texts = w;
         if (h < w) {
             texts = h;
         }
@@ -559,6 +562,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
         return bmp;
     }
+
     public Bitmap createnewWatermark(Bitmap b) {
         Bitmap bitMap = b;
         int width = bitMap.getWidth();
