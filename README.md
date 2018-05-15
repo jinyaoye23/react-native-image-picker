@@ -110,6 +110,9 @@ ImagePicker.clean().then(() => {
 | isHideVideoPreview | bool (default false)      | Enable or disable hidden video preview button | 
 | isPlayGif | bool (default false)      | Enable or disable play gif | 
 | imageLoader | string (default "GLIDE")      | Sets the imageLoader of the page,enum(PICASSO,GLIDE,FRESCO,UNIVERSAL) | 
+|isWaterMark|bool(default false)| Enable or disable WaterMark|
+|address|string|address watermark
+|maxImageSize|number | Setting the maximum image file size|
 #### Response Object
 
 | Property        | Type           | Description  |

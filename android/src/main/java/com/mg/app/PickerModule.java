@@ -651,7 +651,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             }
 
             //水印----日期生成
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             Date curDate = new Date(System.currentTimeMillis());
             String str = formatter.format(curDate);
             //水印----日期生成 end
