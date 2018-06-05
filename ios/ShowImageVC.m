@@ -127,9 +127,9 @@
     //位置显示
     [lineStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance), AutoLayoutFunctionBtnSizeY(30), AutoLayoutFunctionBtnWidth(5), AutoLayoutFunctionBtnHeight(120)) withAttributes:lineStyle];
     
-    [timeStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(25), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(45)) withAttributes:hourStyle];
-    [currentTimeString drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 140), AutoLayoutFunctionBtnSizeY(42), AutoLayoutFunctionBtnWidth(120), AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
-    [weekStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 260), AutoLayoutFunctionBtnSizeY(41), AutoLayoutFunctionBtnWidth(80), AutoLayoutFunctionBtnHeight(40)) withAttributes:weekStyle];
+    [timeStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(25), AutoLayoutFunctionBtnWidth(125), AutoLayoutFunctionBtnHeight(45)) withAttributes:hourStyle];
+    [currentTimeString drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 140), AutoLayoutFunctionBtnSizeY(42), AutoLayoutFunctionBtnWidth(135), AutoLayoutFunctionBtnHeight(40)) withAttributes:dayStyle];
+    [weekStr drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 275), AutoLayoutFunctionBtnSizeY(41), AutoLayoutFunctionBtnWidth(80), AutoLayoutFunctionBtnHeight(40)) withAttributes:weekStyle];
     
     [locationIcon drawInRect:CGRectMake(AutoLayoutFunctionBtnSizeX(xDistance + 15), AutoLayoutFunctionBtnSizeY(80), AutoLayoutFunctionBtnWidth(25), AutoLayoutFunctionBtnHeight(25))];
     
