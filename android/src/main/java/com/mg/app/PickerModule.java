@@ -17,6 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
+import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 import android.view.View;
@@ -218,7 +219,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     }
 
     private WritableMap getAsyncSelection2(final Activity activity, String path) throws Exception {
-//        String path = result.getOriginalPath();
         return getImage(activity, path);
     }
 
@@ -236,14 +236,12 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
     }
 
     private WritableMap getImage(final Activity activity, String path) throws Exception {
-        WritableMap image = new WritableNativeMap();
         if (path.startsWith("http://") || path.startsWith("https://")) {
             throw new Exception("Cannot select remote files");
         }
         validateImage(path);
         File f = new File(path);
 
-        Log.d("aaa", f.length() / 1024 + "--f.len-");
         File compressedImage;
         if (f.length() / 1024 > maxImageSize) {
             compressedImage = compression.compressImage(activity, options, path);
@@ -253,22 +251,24 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         } else {
             compressedImage = f;
         }
-
-
+//
+//
         String compressedImagePath = compressedImage.getPath();
         BitmapFactory.Options options = validateImage(compressedImagePath);
 
+        WritableMap image = new WritableNativeMap();
         image.putString("path", "file://" + compressedImage.getAbsolutePath());
         image.putInt("width", options.outWidth);
         image.putInt("height", options.outHeight);
         image.putString("mime", options.outMimeType);
         image.putInt("size", (int) new File(compressedImagePath).length());
-        Log.d("aaa", compressedImage.getAbsolutePath() + "---999");
         if (includeBase64) {
             image.putString("data", getBase64StringFromFile(compressedImagePath));
         }
 
         return image;
+
+
     }
 
     private WritableMap getImage(final Activity activity, ImageCropBean result) throws Exception {
@@ -296,33 +296,52 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
 
     ImageCropBean result;
 
-    public void openCamera(boolean watermark) {
-//        if(watermark){
-//            Intent intent = new Intent(activity, WaterCameraActivity.class);
-////            intent.putExtra(StaticParam.CUR_ADDRESS, curAddress);
-////            intent.putExtra(StaticParam.USER_NAME, stationName);
-////            Button btn_recv = (Button) findViewById(R.id.batchRecv);
-////            intent.putExtra(StaticParam.USER_OPERATION, btn_recv.getText().toString());
-//            activity.startActivityForResult(intent, 1);
-//            return;
+//    public void openCamera(boolean watermark) {
+//
+//        File f = new File(img_savepath);
+//        if (!f.exists()) {
+//            f.mkdirs();
 //        }
-        File f = new File(img_savepath);
-        if (!f.exists()) {
-            f.mkdirs();
-        }
+//
+//        Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
+//                + ".jpg");
+//        imageUri = myimageUri.toString();
+//        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, myimageUri);
+//
+//        activityhide();
+//        activity.startActivityForResult(cameraIntent, TAKE_IMAGE_REQUEST_CODE);
+//    }
 
-        Uri myimageUri = Uri.parse("file://" + img_savepath + System.currentTimeMillis()
-                + ".jpg");
-        imageUri = myimageUri.toString();
-        Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-        cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, myimageUri);
-
-        activityhide();
-        activity.startActivityForResult(cameraIntent, TAKE_IMAGE_REQUEST_CODE);
-//        activity.overridePendingTransition(R.anim.fade_in, R.anim.fade_out);
-
-
+    private File createOriImageFile() throws Exception {
+        File image = new File(img_savepath + System.currentTimeMillis() + ".jpg");
+        image.getParentFile().mkdirs();
+        return image;
     }
+
+    public void openCamera(boolean watermark) {
+        Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);// 打开相机
+        File oriPhotoFile = null;
+        Uri uri = null;
+        try {
+            oriPhotoFile = createOriImageFile();
+            if (oriPhotoFile != null) {
+                if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N) {
+                    uri = Uri.fromFile(oriPhotoFile);
+                } else {
+                    uri = FileProvider.getUriForFile(activity, "com.mglink.mgcircle", oriPhotoFile);
+                }
+                intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);//私有目录读写权限
+                intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+                activity.startActivityForResult(intent, TAKE_IMAGE_REQUEST_CODE);
+
+                imageUri = oriPhotoFile.getAbsolutePath();
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
 
     public void activityhide() {
         activity.runOnUiThread(new Runnable() {
@@ -627,8 +646,6 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             WritableArray resultArr = new WritableNativeArray();
             resultArr.pushMap(getAsyncSelection2(activity, path));
             mPickerPromise.resolve(resultArr);
-
-
         } catch (Exception e) {
         }
 
@@ -651,7 +668,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             }
 
             //水印----日期生成
-            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd hh:mm");
+            SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd HH:mm");
             Date curDate = new Date(System.currentTimeMillis());
             String str = formatter.format(curDate);
             //水印----日期生成 end
@@ -659,7 +676,7 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
             //带水印Bitmap
             Bitmap newbitmap = createWatermark(bitmap, str);
 
-            String path2 = PickerModule.img_savepath.substring(0, PickerModule.img_savepath.length() - 1);
+            String path2 = com.mg.app.PickerModule.img_savepath.substring(0, com.mg.app.PickerModule.img_savepath.length() - 1);
             String p = path2 + "/" + System.currentTimeMillis() + ".jpg";
             FileOutputStream fisout = new FileOutputStream(p);
             newbitmap.compress(Bitmap.CompressFormat.JPEG, 70, fisout);
@@ -1104,67 +1121,49 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         if (path.startsWith("file://")) {
             path = path.substring(7, path.length());
         }
-//        if (maxImageSize != -1) {
-//            try {
-//                FileInputStream fis = new FileInputStream(path);
-//                Bitmap bitmap = BitmapFactory.decodeStream(fis);
-//
-//                if (bitmap == null) {
-//                    return;
-//                }
-//                ByteArrayInputStream isBm = compressImage(bitmap);
-//                //取代原照片
-//                setnewpath(isBm, path);
-//            } catch (Exception e) {
-//
-//            }
-//        }
-
         posturl(path);
     }
 
     @Override
     public void onActivityResult(Activity activity, int requestCode, int resultCode, Intent data) {
 
-
-        if (requestCode == TAKE_IMAGE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
-
-            String path = imageUri;
-
-            //水印处理
-            if (isWaterMark) {
-                setWaterMark(path);
-                path = imageUri;
-            }
-
-
-            //裁剪处理
-            if (cropping) {
-                crop2(path);
+        try {
+            if (requestCode == TAKE_IMAGE_REQUEST_CODE && resultCode == Activity.RESULT_OK) {
+                String path = imageUri;
+                //水印处理
+                if (isWaterMark) {
+                    setWaterMark(path);
+                    path = imageUri;
+                }
+                //裁剪处理
+                if (cropping) {
+                    crop2(path);
+                    return;
+                }
+                //压缩处理
+                setmaxImageSize(path);
                 return;
             }
 
-            //压缩处理
-            setmaxImageSize(path);
-            return;
-        }
+            if (requestCode == crop_REQUEST_CODE) {
 
-        if (requestCode == crop_REQUEST_CODE) {
+                String path = imageUri;
+                if (path.startsWith("file://")) {
+                    path = path.substring(7, path.length());
+                }
 
-            String path = imageUri;
-            if (path.startsWith("file://")) {
-                path = path.substring(7, path.length());
+
+                File avaterFile = new File(path);//设置文件名称
+                if (avaterFile.exists()) {
+                    avaterFile.delete();
+                }
+
+                //压缩处理
+                setmaxImageSize(OUTUri.toString());
+                return;
             }
+        } catch (Exception e) {
 
-
-            File avaterFile = new File(path);//设置文件名称
-            if (avaterFile.exists()) {
-                avaterFile.delete();
-            }
-
-            //压缩处理
-            setmaxImageSize(OUTUri.toString());
-            return;
         }
     }
 
