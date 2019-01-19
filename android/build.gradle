@@ -15,15 +15,34 @@ android {
 }
 
 
+allprojects {
+    repositories {
+        flatDir {
+            dirs "$rootDir/libs"
+        }
+    }
+}
 dependencies {
     compile fileTree(dir: 'libs', include: ['*.jar'])
-    testCompile 'junit:junit:4.12'
-    compile 'com.android.support:appcompat-v7:25.0.3'
-    compile 'com.facebook.react:react-native:+'
+//    testCompile 'junit:junit:4.12'
+//    compile 'com.android.support:appcompat-v7:25.0.3'
+//    compile 'com.facebook.react:react-native:+'
+//
+//    compile 'com.mg.RxCustomizedImagePicker:library:0.0.9'
+//    //rxgalleryfinal依赖appcompat-v7和recyclerview-v7扩展卡库
+//    compile 'com.android.support:recyclerview-v7:25.0.3'
 
-    compile 'com.mg.RxCustomizedImagePicker:library:0.0.9'
-    //rxgalleryfinal依赖appcompat-v7和recyclerview-v7扩展卡库
-    compile 'com.android.support:recyclerview-v7:25.0.3'
+    //add by david android sd卡图片排序问题 start
+    testCompile 'junit:junit:4.12'
+    compile 'com.android.support:appcompat-v7:25.3.0'
+    compile 'com.facebook.react:react-native:+'
+    compile 'com.android.support:recyclerview-v7:25.3.0'
+    compile(name:'img', ext:'aar')
+    compile 'com.yalantis:ucrop:2.2.0'
+    compile 'io.reactivex.rxjava2:rxandroid:2.0.1'
+    compile 'io.reactivex.rxjava2:rxjava:2.1.0'
+    //add by david android sd卡图片排序问题 end
+
 
     compile 'com.squareup.picasso:picasso:2.5.2'
     compile 'com.facebook.fresco:fresco:1.3.0'
