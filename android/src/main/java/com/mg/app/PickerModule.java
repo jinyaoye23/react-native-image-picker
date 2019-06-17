@@ -20,10 +20,7 @@ import android.provider.MediaStore;
 import android.support.v4.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
-import android.view.View;
 import android.webkit.MimeTypeMap;
-import android.widget.Button;
-import android.widget.Toast;
 
 import com.facebook.react.bridge.ActivityEventListener;
 import com.facebook.react.bridge.Promise;
@@ -39,11 +36,8 @@ import com.nostra13.universalimageloader.cache.disc.naming.Md5FileNameGenerator;
 import com.nostra13.universalimageloader.core.ImageLoader;
 import com.nostra13.universalimageloader.core.ImageLoaderConfiguration;
 import com.nostra13.universalimageloader.core.assist.QueueProcessingType;
-import com.nostra13.universalimageloader.utils.L;
-import com.squareup.picasso.Picasso;
 import com.yalantis.ucrop.UCrop;
 import com.yalantis.ucrop.UCropActivity;
-import com.yalantis.ucrop.model.AspectRatio;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -58,8 +52,6 @@ import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
-import java.util.Random;
-
 
 import cn.finalteam.rxgalleryfinal.RxGalleryFinal;
 import cn.finalteam.rxgalleryfinal.bean.ImageCropBean;
@@ -73,9 +65,7 @@ import cn.finalteam.rxgalleryfinal.ui.RxGalleryListener;
 import cn.finalteam.rxgalleryfinal.ui.base.IRadioImageCheckedListener;
 import cn.finalteam.rxgalleryfinal.utils.FileUtils;
 import cn.finalteam.rxgalleryfinal.utils.Logger;
-import cn.finalteam.rxgalleryfinal.utils.SimpleDateUtils;
 import cn.finalteam.rxgalleryfinal.utils.ThemeUtils;
-import id.zelory.compressor.Compressor;
 
 class PickerModule extends ReactContextBaseJavaModule implements ActivityEventListener {
     private static final String E_ACTIVITY_DOES_NOT_EXIST = "E_ACTIVITY_DOES_NOT_EXIST";
@@ -788,7 +778,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         uCropToolbarColor = ThemeUtils.resolveColor(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_ucrop_toolbar_color, cn.finalteam.rxgalleryfinal.R.color.gallery_default_ucrop_color_widget_active);
         uCropActivityWidgetColor = ThemeUtils.resolveColor(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_ucrop_activity_widget_color, cn.finalteam.rxgalleryfinal.R.color.gallery_default_ucrop_color_widget);
         uCropToolbarWidgetColor = ThemeUtils.resolveColor(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_ucrop_toolbar_widget_color, cn.finalteam.rxgalleryfinal.R.color.gallery_default_toolbar_widget_color);
-        uCropTitle = ThemeUtils.resolveString(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_ucrop_toolbar_title, cn.finalteam.rxgalleryfinal.R.string.gallery_title_cut);
+//        uCropTitle = ThemeUtils.resolveString(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_ucrop_toolbar_title, cn.finalteam.rxgalleryfinal.R.string.gallery_title_cut);
+        uCropTitle="裁剪";
         int pageColor = ThemeUtils.resolveColor(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_page_bg, cn.finalteam.rxgalleryfinal.R.color.gallery_default_page_bg);
 //        mRlRootView.setBackgroundColor(pageColor);
         requestStorageAccessPermissionTips = ThemeUtils.resolveString(activity, cn.finalteam.rxgalleryfinal.R.attr.gallery_request_camera_permission_tips, cn.finalteam.rxgalleryfinal.R.string.gallery_default_camera_access_permission_tips);
@@ -938,20 +929,21 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         mPickerPromise = promise;
 
         RxGalleryFinal rxGalleryFinal = RxGalleryFinal.with(activity);
-        if (openCameraOnStart) {
-            rxGalleryFinal.openCameraOnStart();
-        } else if (!isCamera) {
+//        if (openCameraOnStart) {
+//            rxGalleryFinal.openCameraOnStart();
+//        } else
+        if (!isCamera) {
             rxGalleryFinal.hideCamera();
         }
         if (compressQuality > 0) {
             rxGalleryFinal.cropropCompressionQuality(compressQuality);
         }
-        if (title != null) {
-            rxGalleryFinal.setTitle(title);
-        }
-        if (returnAfterShot) {
-            rxGalleryFinal.returnAfterShot();
-        }
+//        if (title != null) {
+//            rxGalleryFinal.setTitle(title);
+//        }
+//        if (returnAfterShot) {
+//            rxGalleryFinal.returnAfterShot();
+//        }
         if (isVideo) {
             rxGalleryFinal.video();
         } else {
