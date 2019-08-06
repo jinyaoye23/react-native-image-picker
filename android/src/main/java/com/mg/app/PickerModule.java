@@ -329,8 +329,14 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
                 if (android.os.Build.VERSION.SDK_INT < android.os.Build.VERSION_CODES.N) {
                     uri = Uri.fromFile(oriPhotoFile);
                 } else {
-                    uri = FileProvider.getUriForFile(activity, "com.mglink.mgcircle", oriPhotoFile);
-                }
+                    /** modify by david at 2019-8-6 start */
+                    // authorities 更改为当前包名
+                    String authorities = AppUtils.getAppProcessName(activity);
+                    // uri = FileProvider.getUriForFile(activity, "com.mglink.mgcircle",
+                    // oriPhotoFile);
+                    uri = FileProvider.getUriForFile(activity, authorities, oriPhotoFile);
+                    /** modify by david at 2019-8-6 start */
+                    }
                 intent.setFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_GRANT_WRITE_URI_PERMISSION);//私有目录读写权限
                 intent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
                 activity.startActivityForResult(intent, TAKE_IMAGE_REQUEST_CODE);
