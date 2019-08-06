@@ -1,4 +1,4 @@
-package com.heyao216.react_native_installapk;
+package com.mg.app;
 
 import android.app.ActivityManager;
 import android.content.Context;
