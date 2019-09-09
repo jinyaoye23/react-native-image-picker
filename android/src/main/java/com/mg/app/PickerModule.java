@@ -17,7 +17,7 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.provider.MediaStore;
-import android.support.v4.content.FileProvider;
+import androidx.core.content.FileProvider;
 import android.util.Base64;
 import android.util.Log;
 import android.webkit.MimeTypeMap;
@@ -572,7 +572,8 @@ class PickerModule extends ReactContextBaseJavaModule implements ActivityEventLi
         p_line.setStrokeWidth(6.0f);
         canvas.drawLine(baseLineX, baseLineX, baseLineX, line2y + paddingnum, p_line);
 
-        canvas.save(Canvas.ALL_SAVE_FLAG);
+        canvas.save();
+//        canvas.save(Canvas.ALL_SAVE_FLAG);
         canvas.restore();
 
         return bmp;
