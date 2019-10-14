@@ -157,15 +157,11 @@ RCT_EXPORT_METHOD(openCamera:(NSDictionary *)options
 
         dispatch_async(dispatch_get_main_queue(), ^{
             if ([[[self options] objectForKey:@"isWaterMark"] boolValue]) {
-                // add Stephen at 2019-09-21 start 适配iOS13
                 self.vc.modalPresentationStyle = UIModalPresentationFullScreen;
-                // add Stephen at 2019-09-21 end 适配iOS13
                 [[self getRootVC] presentViewController:self.vc animated:YES completion:nil];
             }
             else{
-                // add Stephen at 2019-09-21 start 适配iOS13
                 picker.modalPresentationStyle = UIModalPresentationFullScreen;
-                // add Stephen at 2019-09-21 end 适配iOS13
                 [[self getRootVC] presentViewController:picker animated:YES completion:nil];
             }
         });
@@ -315,9 +311,7 @@ RCT_EXPORT_METHOD(openPicker:(NSDictionary *)options
             }
             
             NSLog(@"%@", [self.options objectForKey:@"minCompressSize"]);
-            // add Stephen at 2019-09-21 start 适配iOS13
             imagePickerController.modalPresentationStyle = UIModalPresentationFullScreen;
-            // add Stephen at 2019-09-21 end 适配iOS13
             [[self getRootVC] presentViewController:imagePickerController animated:YES completion:nil];
             
             
@@ -357,9 +351,7 @@ RCT_EXPORT_METHOD(openCropper:(NSDictionary *)options
     [imageCropVC setModalTransitionStyle:UIModalTransitionStyleCrossDissolve];
     
     dispatch_async(dispatch_get_main_queue(), ^{
-        // add Stephen at 2019-09-21 start 适配iOS13
         imageCropVC.modalPresentationStyle = UIModalPresentationFullScreen;
-        // add Stephen at 2019-09-21 end 适配iOS13
         [[self getRootVC] presentViewController:imageCropVC animated:YES completion:nil];
     });
 }
