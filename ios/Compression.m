@@ -55,7 +55,10 @@
     CGSize newSize = CGSizeMake(newWidth, newHeight);
     
     // 等比缩放
-    UIGraphicsBeginImageContext(newSize);
+    // modify by stephen at 2020-12-21 start 解决压缩失真的问题
+//    UIGraphicsBeginImageContext(newSize);
+    UIGraphicsBeginImageContextWithOptions(newSize, NO, [UIScreen mainScreen].scale);
+    // modify by stephen at 2020-12-21 end 解决压缩失真的问题
     [image drawInRect:CGRectMake(0, 0, newSize.width, newSize.height)];
     UIImage *resizedImage = UIGraphicsGetImageFromCurrentImageContext();
     UIGraphicsEndImageContext();
